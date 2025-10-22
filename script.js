@@ -773,6 +773,9 @@ function showDashboard() {
     // Update new dashboard cards
     updateAchievementsCard();
     updatePregnancyCard();
+    
+    // Show dashboard tabs after login
+    showDashboardTabs();
 }
 
 function hideDashboard() {
@@ -787,6 +790,9 @@ function hideDashboard() {
     if (features) features.style.display = 'block';
     if (about) about.style.display = 'block';
     if (navbar) navbar.style.display = 'block';
+    
+    // Hide dashboard tabs when not logged in
+    hideDashboardTabs();
 }
 
 function logout() {
@@ -794,6 +800,7 @@ function logout() {
     localStorage.removeItem('currentUser');
     sessionStorage.removeItem('currentUser');
     hideDashboard();
+    hideDashboardTabs();
     showSuccess('Logged out successfully!');
 }
 
@@ -3348,4 +3355,252 @@ function showPregnancySymptoms() {
 function showDoctorVisits() {
     // This would open a doctor visits scheduling modal
     alert('Doctor visits scheduling coming soon!');
+}
+
+// Open Pregnancy Window
+function openPregnancyWindow() {
+    // Create a new window for pregnancy dashboard
+    const pregnancyWindow = window.open('', 'pregnancyWindow', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    
+    pregnancyWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Pregnancy Dashboard - Cyclique</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: linear-gradient(135deg, #ff69b4, #ff1493);
+                    min-height: 100vh;
+                }
+                .pregnancy-container {
+                    padding: 2rem;
+                    color: white;
+                }
+                .pregnancy-header {
+                    text-align: center;
+                    margin-bottom: 2rem;
+                }
+                .pregnancy-header h1 {
+                    font-size: 2.5rem;
+                    margin-bottom: 0.5rem;
+                }
+                .pregnancy-content {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 2rem;
+                }
+                .pregnancy-card {
+                    background: rgba(255, 255, 255, 0.1);
+                    padding: 2rem;
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                }
+                .pregnancy-card h3 {
+                    margin-bottom: 1rem;
+                    font-size: 1.5rem;
+                }
+                .close-btn {
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    background: rgba(255, 255, 255, 0.2);
+                    border: none;
+                    color: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 25px;
+                    cursor: pointer;
+                    font-size: 1rem;
+                }
+            </style>
+        </head>
+        <body>
+            <button class="close-btn" onclick="window.close()">Close</button>
+            <div class="pregnancy-container">
+                <div class="pregnancy-header">
+                    <h1><i class="fas fa-baby"></i> Pregnancy Dashboard</h1>
+                    <p>Track your pregnancy journey with comprehensive tools and insights</p>
+                </div>
+                <div class="pregnancy-content">
+                    <div class="pregnancy-card">
+                        <h3><i class="fas fa-calendar-alt"></i> Due Date Countdown</h3>
+                        <p>Set up your due date to start tracking your pregnancy progress.</p>
+                        <button onclick="alert('Pregnancy setup coming soon!')" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer;">Setup Pregnancy</button>
+                    </div>
+                    <div class="pregnancy-card">
+                        <h3><i class="fas fa-running"></i> Kick Counter</h3>
+                        <p>Track your baby's movements and kicks throughout the day.</p>
+                        <button onclick="alert('Kick counter coming soon!')" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer;">Start Counting</button>
+                    </div>
+                    <div class="pregnancy-card">
+                        <h3><i class="fas fa-stopwatch"></i> Contraction Timer</h3>
+                        <p>Time your contractions when labor begins.</p>
+                        <button onclick="alert('Contraction timer coming soon!')" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer;">Start Timer</button>
+                    </div>
+                    <div class="pregnancy-card">
+                        <h3><i class="fas fa-weight"></i> Weight Tracking</h3>
+                        <p>Monitor your weight gain throughout pregnancy.</p>
+                        <button onclick="alert('Weight tracking coming soon!')" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer;">Track Weight</button>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    pregnancyWindow.document.close();
+}
+
+// Open Achievements Window
+function openAchievementsWindow() {
+    // Create a new window for achievements dashboard
+    const achievementsWindow = window.open('', 'achievementsWindow', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    
+    achievementsWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Achievements - Cyclique</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: linear-gradient(135deg, #ffd700, #ffed4e);
+                    min-height: 100vh;
+                    color: #2c3e50;
+                }
+                .achievements-container {
+                    padding: 2rem;
+                }
+                .achievements-header {
+                    text-align: center;
+                    margin-bottom: 2rem;
+                }
+                .achievements-header h1 {
+                    font-size: 2.5rem;
+                    margin-bottom: 0.5rem;
+                }
+                .achievements-content {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 2rem;
+                }
+                .achievement-card {
+                    background: rgba(255, 255, 255, 0.8);
+                    padding: 2rem;
+                    border-radius: 20px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                }
+                .achievement-card h3 {
+                    margin-bottom: 1rem;
+                    font-size: 1.5rem;
+                }
+                .close-btn {
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    background: rgba(0, 0, 0, 0.2);
+                    border: none;
+                    color: #2c3e50;
+                    padding: 0.5rem 1rem;
+                    border-radius: 25px;
+                    cursor: pointer;
+                    font-size: 1rem;
+                }
+            </style>
+        </head>
+        <body>
+            <button class="close-btn" onclick="window.close()">Close</button>
+            <div class="achievements-container">
+                <div class="achievements-header">
+                    <h1><i class="fas fa-trophy"></i> Achievements</h1>
+                    <p>Unlock achievements and level up your health journey</p>
+                </div>
+                <div class="achievements-content">
+                    <div class="achievement-card">
+                        <h3><i class="fas fa-star"></i> Level System</h3>
+                        <p>Earn points and level up by tracking your health consistently.</p>
+                        <div style="background: #f0f0f0; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Level 1</span>
+                                <span>0/100 points</span>
+                            </div>
+                            <div style="background: #ddd; height: 8px; border-radius: 4px;">
+                                <div style="background: linear-gradient(90deg, #ffd700, #ffed4e); height: 100%; width: 0%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="achievement-card">
+                        <h3><i class="fas fa-medal"></i> Badges</h3>
+                        <p>Collect badges for different milestones and achievements.</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0;">
+                            <div style="text-align: center; padding: 1rem; background: #f0f0f0; border-radius: 10px;">
+                                <i class="fas fa-baby" style="font-size: 2rem; color: #ff69b4; margin-bottom: 0.5rem;"></i>
+                                <div style="font-size: 0.8rem;">First Steps</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #f0f0f0; border-radius: 10px; opacity: 0.5;">
+                                <i class="fas fa-fire" style="font-size: 2rem; color: #ff6b6b; margin-bottom: 0.5rem;"></i>
+                                <div style="font-size: 0.8rem;">Week Warrior</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #f0f0f0; border-radius: 10px; opacity: 0.5;">
+                                <i class="fas fa-heart" style="font-size: 2rem; color: #4ecdc4; margin-bottom: 0.5rem;"></i>
+                                <div style="font-size: 0.8rem;">Health Hero</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="achievement-card">
+                        <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                        <p>Track your progress and see how you're doing.</p>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0;">
+                            <div style="text-align: center; padding: 1rem; background: #f0f0f0; border-radius: 10px;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #ffd700;">0</div>
+                                <div style="font-size: 0.8rem;">Day Streak</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #f0f0f0; border-radius: 10px;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #ffd700;">0</div>
+                                <div style="font-size: 0.8rem;">Total Points</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    achievementsWindow.document.close();
+}
+
+// Health Modal
+function showHealthModal() {
+    alert('Health tracking features coming soon!');
+}
+
+// Community Modal
+function showCommunityModal() {
+    alert('Community features coming soon!');
+}
+
+// Show/Hide Dashboard Tabs
+function showDashboardTabs() {
+    const dashboardTabs = document.querySelector('.dashboard-tabs');
+    if (dashboardTabs) {
+        dashboardTabs.style.display = 'flex';
+    }
+}
+
+function hideDashboardTabs() {
+    const dashboardTabs = document.querySelector('.dashboard-tabs');
+    if (dashboardTabs) {
+        dashboardTabs.style.display = 'none';
+    }
 }

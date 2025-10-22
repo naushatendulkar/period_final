@@ -353,6 +353,14 @@
                     <h1 id="welcomeMessage">Welcome back, <span id="userDisplayName"></span>!</h1>
                     <p class="cycle-info">Track your cycle, monitor symptoms, and get personalized insights.</p>
                 </div>
+                <div class="dashboard-tabs">
+                    <button class="dashboard-tab-btn pregnancy-tab-btn" onclick="openPregnancyWindow()">
+                        <i class="fas fa-baby"></i> Pregnancy
+                    </button>
+                    <button class="dashboard-tab-btn achievements-tab-btn" onclick="openAchievementsWindow()">
+                        <i class="fas fa-trophy"></i> Achievements
+                    </button>
+                </div>
                 <div class="quick-stats">
                     <div class="stat-card">
                         <i class="fas fa-calendar-alt"></i>
@@ -419,135 +427,6 @@
                     
                 </div>
 
-                <!-- Pregnancy -->
-                <div class="dashboard-card pregnancy-card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-baby"></i> Pregnancy</h3>
-                        <button class="btn-secondary" onclick="showPregnancyModal()">
-                            <i class="fas fa-baby"></i> Open Dashboard
-                        </button>
-                    </div>
-                    <div class="pregnancy-content">
-                        <!-- Pregnancy Status -->
-                        <div class="pregnancy-status" id="pregnancyStatus">
-                            <div class="status-icon">
-                                <i class="fas fa-heart"></i>
-                            </div>
-                            <div class="status-text">
-                                <h5>Not Pregnant</h5>
-                                <p>Set up your pregnancy to start tracking</p>
-                            </div>
-                        </div>
-
-                        <!-- Quick Stats -->
-                        <div class="pregnancy-stats">
-                            <div class="stat-item">
-                                <div class="stat-icon">
-                                    <i class="fas fa-calendar-alt"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="quickDaysRemaining">--</span>
-                                    <span class="stat-label">Days Left</span>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="quickCurrentWeek">--</span>
-                                    <span class="stat-label">Week</span>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon">
-                                    <i class="fas fa-weight"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="quickWeightGain">--</span>
-                                    <span class="stat-label">Weight Gain</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Actions -->
-                        <div class="pregnancy-actions">
-                            <button class="action-btn" onclick="showPregnancySetup()">
-                                <i class="fas fa-cog"></i> Setup
-                            </button>
-                            <button class="action-btn" onclick="startKickCounting()">
-                                <i class="fas fa-running"></i> Kick Counter
-                            </button>
-                            <button class="action-btn" onclick="startContractionTimer()">
-                                <i class="fas fa-stopwatch"></i> Contractions
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Achievements -->
-                <div class="dashboard-card achievements-card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-trophy"></i> Achievements</h3>
-                        <button class="btn-secondary" onclick="showGamificationModal()">
-                            <i class="fas fa-medal"></i> View All
-                        </button>
-                    </div>
-                    <div class="achievements-content">
-                        <!-- Quick Stats -->
-                        <div class="achievements-stats">
-                            <div class="stat-item">
-                                <div class="stat-icon">
-                                    <i class="fas fa-star"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="quickLevel">1</span>
-                                    <span class="stat-label">Level</span>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon">
-                                    <i class="fas fa-fire"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="quickStreak">0</span>
-                                    <span class="stat-label">Day Streak</span>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon">
-                                    <i class="fas fa-medal"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="quickBadges">0</span>
-                                    <span class="stat-label">Badges</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Achievement -->
-                        <div class="recent-achievement" id="recentAchievement">
-                            <div class="achievement-icon">
-                                <i class="fas fa-baby"></i>
-                            </div>
-                            <div class="achievement-text">
-                                <h5>First Steps</h5>
-                                <p>Log your first period to unlock this achievement!</p>
-                            </div>
-                        </div>
-
-                        <!-- Progress Bar -->
-                        <div class="level-progress">
-                            <div class="progress-info">
-                                <span>Level Progress</span>
-                                <span id="quickProgress">0/100</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="quickProgressFill" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Health Education -->
                 <div class="dashboard-card education-card">
@@ -633,6 +512,102 @@
                             <div class="insight-text">
                                 <h4>Health Tips</h4>
                                 <p id="healthTips">Stay hydrated and consider light exercise during your period to help with cramps.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Tracking -->
+                <div class="dashboard-card health-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-heartbeat"></i> Health Tracking</h3>
+                        <button class="btn-secondary" onclick="showHealthModal()">
+                            <i class="fas fa-plus"></i> Add Entry
+                        </button>
+                    </div>
+                    <div class="health-content">
+                        <div class="health-stats">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-weight"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number">65.2</span>
+                                    <span class="stat-label">Weight (kg)</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-thermometer-half"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number">36.5°</span>
+                                    <span class="stat-label">Temperature</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-bed"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number">7.5h</span>
+                                    <span class="stat-label">Sleep</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="health-chart">
+                            <canvas id="healthChart" width="300" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community -->
+                <div class="dashboard-card community-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-users"></i> Community</h3>
+                        <button class="btn-secondary" onclick="showCommunityModal()">
+                            <i class="fas fa-comments"></i> Join Chat
+                        </button>
+                    </div>
+                    <div class="community-content">
+                        <div class="community-stats">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number">2.5K</span>
+                                    <span class="stat-label">Members</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number">156</span>
+                                    <span class="stat-label">Posts Today</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="recent-posts">
+                            <div class="post-item">
+                                <div class="post-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="post-content">
+                                    <h5>Sarah M.</h5>
+                                    <p>Great tips for managing cramps naturally!</p>
+                                </div>
+                            </div>
+                            <div class="post-item">
+                                <div class="post-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="post-content">
+                                    <h5>Emma L.</h5>
+                                    <p>Anyone else experiencing irregular cycles?</p>
+                                </div>
                             </div>
                         </div>
                     </div>
