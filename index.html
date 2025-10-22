@@ -285,6 +285,10 @@
                     <input type="email" id="signupEmail" name="email" required>
                 </div>
                 <div class="form-group">
+                    <label for="signupAge">Age</label>
+                    <input type="number" id="signupAge" name="age" min="13" max="60" required>
+                </div>
+                <div class="form-group">
                     <label for="signupPassword">Password</label>
                     <input type="password" id="signupPassword" name="password" required>
                 </div>
@@ -381,6 +385,9 @@
                     <div class="card-header">
                         <h3><i class="fas fa-calendar"></i> Cycle Calendar</h3>
                         <div class="calendar-actions">
+                            <button class="btn-secondary" onclick="generateSimpleCalendar()" title="Test Simple Calendar">
+                                <i class="fas fa-test-tube"></i>
+                            </button>
                             <button class="btn-secondary" onclick="refreshCalendar()" title="Refresh Calendar">
                                 <i class="fas fa-sync-alt"></i>
                             </button>

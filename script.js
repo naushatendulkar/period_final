@@ -13,15 +13,292 @@ let aiModels = {
     fertilityWindow: null
 };
 
+// IndexedDB Database
+let cycliqueDB = null;
+
 // DOM Elements
 const loginModal = document.getElementById('loginModal');
 const signupModal = document.getElementById('signupModal');
 const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
+
+// IndexedDB Database Manager
+class CycliqueDB {
+    constructor() {
+        this.db = null;
+        this.dbName = 'CycliqueDB';
+        this.version = 1;
+    }
+
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.version);
+            
+            request.onerror = () => {
+                console.error('IndexedDB failed to open');
+                reject(request.error);
+            };
+            
+            request.onsuccess = () => {
+                this.db = request.result;
+                console.log('IndexedDB opened successfully');
+                resolve(this.db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                // Create object stores
+                if (!db.objectStoreNames.contains('users')) {
+                    const userStore = db.createObjectStore('users', { keyPath: 'id' });
+                    userStore.createIndex('email', 'email', { unique: true });
+                }
+                
+                if (!db.objectStoreNames.contains('periods')) {
+                    const periodStore = db.createObjectStore('periods', { keyPath: 'id' });
+                    periodStore.createIndex('userId', 'userId');
+                    periodStore.createIndex('startDate', 'startDate');
+                }
+                
+                if (!db.objectStoreNames.contains('dailyLogs')) {
+                    const logStore = db.createObjectStore('dailyLogs', { keyPath: 'id' });
+                    logStore.createIndex('userId', 'userId');
+                    logStore.createIndex('date', 'date');
+                }
+                
+                if (!db.objectStoreNames.contains('settings')) {
+                    db.createObjectStore('settings', { keyPath: 'userId' });
+                }
+                
+                console.log('IndexedDB object stores created');
+            };
+        });
+    }
+
+    // User operations
+    async addUser(user) {
+        const transaction = this.db.transaction(['users'], 'readwrite');
+        const store = transaction.objectStore('users');
+        return store.add(user);
+    }
+
+    async getUser(id) {
+        const transaction = this.db.transaction(['users'], 'readonly');
+        const store = transaction.objectStore('users');
+        return new Promise((resolve, reject) => {
+            const request = store.get(id);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getUserByEmail(email) {
+        const transaction = this.db.transaction(['users'], 'readonly');
+        const store = transaction.objectStore('users');
+        const index = store.index('email');
+        return new Promise((resolve, reject) => {
+            const request = index.get(email);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async updateUser(user) {
+        const transaction = this.db.transaction(['users'], 'readwrite');
+        const store = transaction.objectStore('users');
+        return store.put(user);
+    }
+
+    // Period operations
+    async addPeriod(period) {
+        const transaction = this.db.transaction(['periods'], 'readwrite');
+        const store = transaction.objectStore('periods');
+        return store.add(period);
+    }
+
+    async getPeriods(userId) {
+        const transaction = this.db.transaction(['periods'], 'readonly');
+        const store = transaction.objectStore('periods');
+        const index = store.index('userId');
+        return new Promise((resolve, reject) => {
+            const request = index.getAll(userId);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async updatePeriod(period) {
+        const transaction = this.db.transaction(['periods'], 'readwrite');
+        const store = transaction.objectStore('periods');
+        return store.put(period);
+    }
+
+    async deletePeriod(id) {
+        const transaction = this.db.transaction(['periods'], 'readwrite');
+        const store = transaction.objectStore('periods');
+        return store.delete(id);
+    }
+
+    // Daily log operations
+    async addDailyLog(log) {
+        const transaction = this.db.transaction(['dailyLogs'], 'readwrite');
+        const store = transaction.objectStore('dailyLogs');
+        return store.add(log);
+    }
+
+    async getDailyLogs(userId) {
+        const transaction = this.db.transaction(['dailyLogs'], 'readonly');
+        const store = transaction.objectStore('dailyLogs');
+        const index = store.index('userId');
+        return new Promise((resolve, reject) => {
+            const request = index.getAll(userId);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getDailyLog(userId, date) {
+        const transaction = this.db.transaction(['dailyLogs'], 'readonly');
+        const store = transaction.objectStore('dailyLogs');
+        const index = store.index('userId');
+        return new Promise((resolve, reject) => {
+            const request = index.getAll(userId);
+            request.onsuccess = () => {
+                const logs = request.result;
+                const log = logs.find(l => l.date === date);
+                resolve(log || null);
+            };
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async updateDailyLog(log) {
+        const transaction = this.db.transaction(['dailyLogs'], 'readwrite');
+        const store = transaction.objectStore('dailyLogs');
+        return store.put(log);
+    }
+
+    // Export/Import operations
+    async exportData(userId) {
+        const [periods, logs] = await Promise.all([
+            this.getPeriods(userId),
+            this.getDailyLogs(userId)
+        ]);
+        
+        return {
+            periods,
+            dailyLogs: logs,
+            exportDate: new Date().toISOString(),
+            version: this.version
+        };
+    }
+
+    async importData(userId, data) {
+        const transaction = this.db.transaction(['periods', 'dailyLogs'], 'readwrite');
+        const periodStore = transaction.objectStore('periods');
+        const logStore = transaction.objectStore('dailyLogs');
+        
+        // Clear existing data
+        const existingPeriods = await this.getPeriods(userId);
+        const existingLogs = await this.getDailyLogs(userId);
+        
+        for (const period of existingPeriods) {
+            await periodStore.delete(period.id);
+        }
+        
+        for (const log of existingLogs) {
+            await logStore.delete(log.id);
+        }
+        
+        // Add imported data
+        for (const period of data.periods || []) {
+            period.userId = userId;
+            await periodStore.add(period);
+        }
+        
+        for (const log of data.dailyLogs || []) {
+            log.userId = userId;
+            await logStore.add(log);
+        }
+    }
+}
 const successMessage = document.getElementById('successMessage');
 const errorMessage = document.getElementById('errorMessage');
 const successText = document.getElementById('successText');
 const errorText = document.getElementById('errorText');
+
+// Database initialization and migration
+async function initDatabase() {
+    try {
+        cycliqueDB = new CycliqueDB();
+        await cycliqueDB.init();
+        console.log('Database initialized successfully');
+        
+        // Migrate data from localStorage if needed
+        await migrateFromLocalStorage();
+        
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize database:', error);
+        return false;
+    }
+}
+
+async function migrateFromLocalStorage() {
+    try {
+        // Check if we have data in localStorage
+        const hasLocalStorageData = localStorage.getItem('periodTrackerUsers') || 
+                                   localStorage.getItem('periodData') || 
+                                   localStorage.getItem('dailyLogs');
+        
+        if (!hasLocalStorageData) {
+            console.log('No localStorage data to migrate');
+            return;
+        }
+        
+        console.log('Migrating data from localStorage to IndexedDB...');
+        
+        // Migrate users
+        const users = JSON.parse(localStorage.getItem('periodTrackerUsers')) || [];
+        for (const user of users) {
+            try {
+                await cycliqueDB.addUser(user);
+            } catch (error) {
+                console.log('User already exists or error adding user:', error);
+            }
+        }
+        
+        // Migrate periods
+        const periods = JSON.parse(localStorage.getItem('periodData')) || [];
+        for (const period of periods) {
+            try {
+                await cycliqueDB.addPeriod(period);
+            } catch (error) {
+                console.log('Error adding period:', error);
+            }
+        }
+        
+        // Migrate daily logs
+        const logs = JSON.parse(localStorage.getItem('dailyLogs')) || [];
+        for (const log of logs) {
+            try {
+                await cycliqueDB.addDailyLog(log);
+            } catch (error) {
+                console.log('Error adding daily log:', error);
+            }
+        }
+        
+        console.log('Data migration completed successfully');
+        
+        // Clear localStorage after successful migration
+        localStorage.removeItem('periodTrackerUsers');
+        localStorage.removeItem('periodData');
+        localStorage.removeItem('dailyLogs');
+        
+    } catch (error) {
+        console.error('Error during migration:', error);
+    }
+}
 
 // Modal Functions
 function showLoginModal() {
@@ -38,8 +315,13 @@ function showSignupModal() {
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        console.log(`Modal ${modalId} closed`);
+    } else {
+        console.error(`Modal ${modalId} not found`);
+    }
 }
 
 function switchToSignup() {
@@ -119,9 +401,16 @@ function registerUser(userData) {
     return newUser;
 }
 
-function authenticateUser(email, password) {
-    const user = users.find(user => user.email === email && user.password === password);
+async function authenticateUser(email, password) {
+    if (!cycliqueDB) {
+        throw new Error('Database not initialized');
+    }
+    
+    const user = await cycliqueDB.getUserByEmail(email);
     if (!user) {
+        throw new Error('Invalid email or password');
+    }
+    if (user.password !== password) {
         throw new Error('Invalid email or password');
     }
     if (!user.isActive) {
@@ -132,7 +421,7 @@ function authenticateUser(email, password) {
 
 // Login Form Handler
 if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
+    loginForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     console.log('Login form submitted'); // Debug log
     
@@ -159,45 +448,41 @@ if (loginForm) {
     submitBtn.innerHTML = '<span class="loading"></span> Logging in...';
     submitBtn.disabled = true;
 
-    // Simulate API call delay
-    setTimeout(() => {
-        try {
-            console.log('Attempting to authenticate user...'); // Debug log
-            console.log('Available users:', users); // Debug log
-            const user = authenticateUser(email, password);
-            console.log('User authenticated:', user); // Debug log
+    try {
+        console.log('Attempting to authenticate user...'); // Debug log
+        const user = await authenticateUser(email, password);
+        console.log('User authenticated:', user); // Debug log
             
-            // Store user session
-            currentUser = user;
-            if (rememberMe) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-            } else {
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-            }
-
-            // Close modal first
-            closeModal('loginModal');
-            
-            // Reset form
-            loginForm.reset();
-            
-            // Show dashboard
-            showDashboard();
-            
-            // Show success message after dashboard is shown
-            setTimeout(() => {
-                showSuccess(`Welcome back, ${user.name}!`);
-            }, 100);
-
-        } catch (error) {
-            console.error('Login error:', error); // Debug log
-            showError(error.message);
-        } finally {
-            // Reset button
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
+        // Store user session
+        currentUser = user;
+        if (rememberMe) {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+        } else {
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
         }
-    }, 1500);
+
+        // Close modal first
+        closeModal('loginModal');
+        
+        // Reset form
+        loginForm.reset();
+        
+        // Show dashboard
+        showDashboard();
+        
+        // Show success message after dashboard is shown
+        setTimeout(() => {
+            showSuccess(`Welcome back, ${user.name}!`);
+        }, 100);
+
+    } catch (error) {
+        console.error('Login error:', error); // Debug log
+        showError(error.message);
+    } finally {
+        // Reset button
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
     });
 }
 
@@ -210,7 +495,7 @@ if (signupForm) {
     const email = document.getElementById('signupEmail').value.trim();
     const password = document.getElementById('signupPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
-    const age = parseInt(document.getElementById('age').value);
+    const age = parseInt(document.getElementById('signupAge').value);
     const termsAccepted = document.querySelector('input[name="terms"]').checked;
 
     // Validation
@@ -508,27 +793,27 @@ function logout() {
     showSuccess('Logged out successfully!');
 }
 
-function initializeDashboard() {
+async function initializeDashboard() {
     // Wait a bit for DOM to be ready
-    setTimeout(() => {
+    setTimeout(async () => {
         try {
             // Add some sample data if no periods exist
-            addSampleDataIfNeeded();
+            await addSampleDataIfNeeded();
             
-            updateQuickStats();
+            await updateQuickStats();
             generateCalendar();
-            updateInsights();
-            updateHistoryStats();
+            await updateInsights();
+            await updateHistoryStats();
             updateAIDataDisplay();
-            loadTodayLog();
+            await loadTodayLog();
         } catch (error) {
             console.error('Dashboard initialization error:', error);
         }
     }, 100);
 }
 
-function addSampleDataIfNeeded() {
-    const periods = getUserPeriods();
+async function addSampleDataIfNeeded() {
+    const periods = await getUserPeriods();
     if (periods.length === 0 && currentUser) {
         // Add a sample period 3 days ago
         const threeDaysAgo = new Date();
@@ -536,7 +821,7 @@ function addSampleDataIfNeeded() {
         const fiveDaysAgo = new Date();
         fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
         
-        addPeriod(
+        await addPeriod(
             fiveDaysAgo.toISOString().split('T')[0],
             threeDaysAgo.toISOString().split('T')[0],
             'medium',
@@ -546,7 +831,12 @@ function addSampleDataIfNeeded() {
 }
 
 // Period Tracking Functions
-function addPeriod(startDate, endDate, flow, notes = '') {
+async function addPeriod(startDate, endDate, flow, notes = '') {
+    if (!cycliqueDB) {
+        console.error('Database not initialized');
+        return;
+    }
+    
     const period = {
         id: Date.now().toString(),
         userId: currentUser.id,
@@ -557,20 +847,33 @@ function addPeriod(startDate, endDate, flow, notes = '') {
         createdAt: new Date().toISOString()
     };
     
-    periodData.push(period);
-    localStorage.setItem('periodData', JSON.stringify(periodData));
-    
-    // Update dashboard
-    updateQuickStats();
-    generateCalendar();
-    updateInsights();
-    updateHistoryStats();
-    
-    console.log('Period added and dashboard updated');
+    try {
+        await cycliqueDB.addPeriod(period);
+        
+        // Update dashboard
+        updateQuickStats();
+        generateCalendar();
+        updateInsights();
+        updateHistoryStats();
+        
+        console.log('Period added and dashboard updated');
+    } catch (error) {
+        console.error('Error adding period:', error);
+        showError('Failed to add period. Please try again.');
+    }
 }
 
-function getUserPeriods() {
-    return periodData.filter(period => period.userId === currentUser.id);
+async function getUserPeriods() {
+    if (!cycliqueDB || !currentUser) {
+        return [];
+    }
+    
+    try {
+        return await cycliqueDB.getPeriods(currentUser.id);
+    } catch (error) {
+        console.error('Error getting periods:', error);
+        return [];
+    }
 }
 
 function calculateCycleLength(periods) {
@@ -593,8 +896,8 @@ function predictNextPeriod(periods) {
     return aiPrediction ? aiPrediction.date : null;
 }
 
-function updateQuickStats() {
-    const periods = getUserPeriods();
+async function updateQuickStats() {
+    const periods = await getUserPeriods();
     const today = new Date();
     
     const daysSinceElement = document.getElementById('daysSinceLastPeriod');
@@ -633,7 +936,7 @@ function updateQuickStats() {
 // Calendar Functions
 let currentCalendarDate = new Date();
 
-function generateCalendar() {
+async function generateCalendar() {
     const calendarGrid = document.getElementById('calendarGrid');
     const currentMonthElement = document.getElementById('currentMonth');
     
@@ -659,6 +962,10 @@ function generateCalendar() {
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
     
+    console.log('Calendar date:', currentCalendarDate);
+    console.log('First day:', firstDay);
+    console.log('Start date:', startDate);
+    
     // Clear the calendar grid
     calendarGrid.innerHTML = '';
     
@@ -671,6 +978,12 @@ function generateCalendar() {
         calendarGrid.appendChild(dayHeader);
     });
     
+    console.log('Day headers added');
+    
+    // Fetch periods data once at the beginning
+    const periods = await getUserPeriods();
+    console.log('Periods loaded:', periods);
+    
     // Generate calendar days (6 weeks = 42 days)
     for (let i = 0; i < 42; i++) {
         const date = new Date(startDate);
@@ -680,19 +993,22 @@ function generateCalendar() {
         dayElement.className = 'calendar-day';
         dayElement.textContent = date.getDate();
         
+        console.log(`Creating day ${i + 1}: ${date.getDate()}`);
+        
         // Check if this is today
         const today = new Date();
         if (date.toDateString() === today.toDateString()) {
             dayElement.classList.add('today');
+            console.log('Today marked:', date.getDate());
         }
         
         // Check if this is a period day
-        const periods = getUserPeriods();
         periods.forEach(period => {
             const periodStartDate = new Date(period.startDate);
             const periodEndDate = new Date(period.endDate);
             if (date >= periodStartDate && date <= periodEndDate) {
                 dayElement.classList.add('period');
+                console.log('Period day marked:', date.getDate());
             }
         });
         
@@ -700,28 +1016,84 @@ function generateCalendar() {
         const nextPeriod = predictNextPeriod(periods);
         if (nextPeriod && date.toDateString() === nextPeriod.toDateString()) {
             dayElement.classList.add('predicted');
+            console.log('Predicted period day marked:', date.getDate());
         }
         
         calendarGrid.appendChild(dayElement);
     }
     
-    console.log('Calendar generated successfully');
+    console.log('Calendar generated successfully with', calendarGrid.children.length, 'elements');
 }
 
-function previousMonth() {
+async function previousMonth() {
     currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-    generateCalendar();
+    await generateCalendar();
 }
 
-function nextMonth() {
+async function nextMonth() {
     currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-    generateCalendar();
+    await generateCalendar();
 }
 
 // Manual calendar refresh function
-function refreshCalendar() {
+async function refreshCalendar() {
     console.log('Manually refreshing calendar...');
-    generateCalendar();
+    await generateCalendar();
+}
+
+// Test function to create a simple calendar without periods
+function generateSimpleCalendar() {
+    const calendarGrid = document.getElementById('calendarGrid');
+    const currentMonthElement = document.getElementById('currentMonth');
+    
+    if (!calendarGrid || !currentMonthElement) {
+        console.log('Calendar elements not found for simple calendar');
+        return;
+    }
+    
+    console.log('Generating simple calendar...');
+    
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    currentMonthElement.textContent = 
+        `${monthNames[currentCalendarDate.getMonth()]} ${currentCalendarDate.getFullYear()}`;
+    
+    const firstDay = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth(), 1);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    // Clear the calendar grid
+    calendarGrid.innerHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day day-header';
+        dayHeader.textContent = day;
+        calendarGrid.appendChild(dayHeader);
+    });
+    
+    // Generate simple calendar days
+    for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = date.getDate();
+        
+        // Highlight today
+        const today = new Date();
+        if (date.toDateString() === today.toDateString()) {
+            dayElement.classList.add('today');
+        }
+        
+        calendarGrid.appendChild(dayElement);
+    }
+    
+    console.log('Simple calendar generated with', calendarGrid.children.length, 'elements');
 }
 
 // Add Period Modal
@@ -733,7 +1105,7 @@ function showAddPeriodModal() {
 // Add Period Form Handler
 const addPeriodForm = document.getElementById('addPeriodForm');
 if (addPeriodForm) {
-    addPeriodForm.addEventListener('submit', function(e) {
+    addPeriodForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const startDate = document.getElementById('periodStartDate').value;
@@ -746,7 +1118,7 @@ if (addPeriodForm) {
         return;
     }
     
-    addPeriod(startDate, endDate, flow, notes);
+    await addPeriod(startDate, endDate, flow, notes);
     closeModal('addPeriodModal');
     showSuccess('Period added successfully!');
     
@@ -822,8 +1194,8 @@ document.addEventListener('click', function(e) {
 });
 
 // AI Insights Functions
-function updateInsights() {
-    const periods = getUserPeriods();
+async function updateInsights() {
+    const periods = await getUserPeriods();
     
     const predictedDateElement = document.getElementById('predictedDate');
     const avgCycleLengthElement = document.getElementById('avgCycleLength');
@@ -903,8 +1275,8 @@ function updateInsights() {
 }
 
 // History Stats Functions
-function updateHistoryStats() {
-    const periods = getUserPeriods();
+async function updateHistoryStats() {
+    const periods = await getUserPeriods();
     
     const shortestCycleElement = document.getElementById('shortestCycle');
     const longestCycleElement = document.getElementById('longestCycle');
@@ -1136,7 +1508,7 @@ function getAIPrediction(userAge, cycleHistory) {
     if (!aiModels.cycleLength) return getBasicPrediction(cycleHistory);
     
     const ageGroup = Math.floor(userAge / 10) * 10;
-    const agePattern = aiModels.agePatterns[ageGroup];
+    const agePattern = aiModels.agePatterns && aiModels.agePatterns[ageGroup] ? aiModels.agePatterns[ageGroup] : null;
     
     let predictedCycleLength = aiModels.cycleLength.mean;
     let confidence = 0.7;
@@ -1200,7 +1572,7 @@ function predictNextPeriodWithAI(periods) {
         return Math.ceil((start2 - start1) / (1000 * 60 * 60 * 24));
     });
     
-    const userAge = currentUser ? currentUser.age : 25;
+    const userAge = currentUser && currentUser.age ? currentUser.age : 25;
     const prediction = getAIPrediction(userAge, cycleHistory);
     
     const lastStartDate = new Date(lastPeriod.startDate);
@@ -1376,7 +1748,14 @@ function updatePopulationInsights() {
 }
 
 // Check if user is already logged in on page load
-window.addEventListener('load', function() {
+window.addEventListener('load', async function() {
+    // Initialize database first
+    const dbInitialized = await initDatabase();
+    if (!dbInitialized) {
+        console.error('Failed to initialize database');
+        return;
+    }
+    
     const savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
