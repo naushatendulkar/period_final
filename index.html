@@ -400,6 +400,9 @@
                             <button class="btn-secondary" onclick="showLogSymptomsModal()">
                                 <i class="fas fa-heartbeat"></i> Log Symptoms
                             </button>
+                            <button class="btn-gamification" onclick="showGamificationModal()">
+                                <i class="fas fa-trophy"></i> Achievements
+                            </button>
                         </div>
                     </div>
                     <div class="calendar-container">
@@ -806,6 +809,166 @@
             </div>
             <div class="video-info" id="videoInfo">
                 <!-- Video information will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Gamification Modal -->
+    <div id="gamificationModal" class="modal">
+        <div class="gamification-container">
+            <div class="gamification-header">
+                <div class="gamification-title">
+                    <i class="fas fa-trophy"></i>
+                    <span>Achievements & Progress</span>
+                </div>
+                <button class="gamification-close" onclick="closeModal('gamificationModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="gamification-nav">
+                <button class="gamification-nav-btn active" onclick="showGamificationTab('overview')">
+                    <i class="fas fa-chart-line"></i> Overview
+                </button>
+                <button class="gamification-nav-btn" onclick="showGamificationTab('achievements')">
+                    <i class="fas fa-medal"></i> Achievements
+                </button>
+                <button class="gamification-nav-btn" onclick="showGamificationTab('challenges')">
+                    <i class="fas fa-target"></i> Challenges
+                </button>
+                <button class="gamification-nav-btn" onclick="showGamificationTab('leaderboard')">
+                    <i class="fas fa-crown"></i> Leaderboard
+                </button>
+            </div>
+            
+            <div class="gamification-content">
+                <!-- Overview Tab -->
+                <div class="gamification-tab-content" id="overviewTab">
+                    <div class="progress-dashboard">
+                        <!-- User Level & Points -->
+                        <div class="level-section">
+                            <div class="level-info">
+                                <div class="level-badge">
+                                    <i class="fas fa-star"></i>
+                                    <span class="level-number" id="userLevel">1</span>
+                                </div>
+                                <div class="level-details">
+                                    <h3>Level <span id="currentLevel">1</span></h3>
+                                    <p><span id="currentPoints">0</span> / <span id="nextLevelPoints">100</span> points to next level</p>
+                                </div>
+                            </div>
+                            <div class="level-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="levelProgress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-fire"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="currentStreak">0</span>
+                                    <span class="stat-label">Day Streak</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="healthScore">85</span>
+                                    <span class="stat-label">Health Score</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-medal"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="totalBadges">0</span>
+                                    <span class="stat-label">Badges Earned</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="daysTracked">0</span>
+                                    <span class="stat-label">Days Tracked</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Achievements -->
+                        <div class="recent-achievements">
+                            <h4><i class="fas fa-trophy"></i> Recent Achievements</h4>
+                            <div class="achievements-list" id="recentAchievements">
+                                <div class="no-achievements">
+                                    <i class="fas fa-medal"></i>
+                                    <p>No achievements yet. Start tracking to earn your first badge!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Tab -->
+                <div class="gamification-tab-content" id="achievementsTab" style="display: none;">
+                    <div class="achievements-gallery">
+                        <div class="achievement-categories">
+                            <button class="category-btn active" onclick="filterAchievements('all')">All</button>
+                            <button class="category-btn" onclick="filterAchievements('consistency')">Consistency</button>
+                            <button class="category-btn" onclick="filterAchievements('health')">Health</button>
+                            <button class="category-btn" onclick="filterAchievements('knowledge')">Knowledge</button>
+                            <button class="category-btn" onclick="filterAchievements('special')">Special</button>
+                        </div>
+                        <div class="achievements-grid" id="achievementsGrid">
+                            <!-- Achievements will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Challenges Tab -->
+                <div class="gamification-tab-content" id="challengesTab" style="display: none;">
+                    <div class="challenges-section">
+                        <div class="challenge-categories">
+                            <div class="challenge-category">
+                                <h4><i class="fas fa-calendar-day"></i> Daily Challenges</h4>
+                                <div class="challenges-list" id="dailyChallenges">
+                                    <!-- Daily challenges will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="challenge-category">
+                                <h4><i class="fas fa-calendar-week"></i> Weekly Challenges</h4>
+                                <div class="challenges-list" id="weeklyChallenges">
+                                    <!-- Weekly challenges will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Tab -->
+                <div class="gamification-tab-content" id="leaderboardTab" style="display: none;">
+                    <div class="leaderboard-section">
+                        <div class="leaderboard-header">
+                            <h4><i class="fas fa-crown"></i> Top Performers</h4>
+                            <div class="leaderboard-filters">
+                                <button class="filter-btn active" onclick="filterLeaderboard('points')">Points</button>
+                                <button class="filter-btn" onclick="filterLeaderboard('streak')">Streak</button>
+                                <button class="filter-btn" onclick="filterLeaderboard('health')">Health Score</button>
+                            </div>
+                        </div>
+                        <div class="leaderboard-list" id="leaderboardList">
+                            <!-- Leaderboard will be loaded here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -1776,6 +1776,364 @@ function openBookmark(type, id) {
     }
 }
 
+// Gamification Functions
+function showGamificationModal() {
+    const modal = document.getElementById('gamificationModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        loadGamificationData();
+    }
+}
+
+function showGamificationTab(tabName) {
+    // Hide all tabs
+    const tabs = document.querySelectorAll('.gamification-tab-content');
+    tabs.forEach(tab => tab.style.display = 'none');
+    
+    // Remove active class from all nav buttons
+    const navBtns = document.querySelectorAll('.gamification-nav-btn');
+    navBtns.forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + 'Tab');
+    if (selectedTab) {
+        selectedTab.style.display = 'block';
+    }
+    
+    // Add active class to selected nav button
+    const selectedBtn = document.querySelector(`[onclick="showGamificationTab('${tabName}')"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Load content based on tab
+    if (tabName === 'overview') {
+        loadOverviewData();
+    } else if (tabName === 'achievements') {
+        loadAchievements();
+    } else if (tabName === 'challenges') {
+        loadChallenges();
+    } else if (tabName === 'leaderboard') {
+        loadLeaderboard();
+    }
+}
+
+function loadGamificationData() {
+    loadOverviewData();
+}
+
+function loadOverviewData() {
+    // Load user progress data
+    const userData = getUserGamificationData();
+    
+    // Update level and points
+    document.getElementById('currentLevel').textContent = userData.level;
+    document.getElementById('userLevel').textContent = userData.level;
+    document.getElementById('currentPoints').textContent = userData.points;
+    document.getElementById('nextLevelPoints').textContent = userData.nextLevelPoints;
+    
+    // Update progress bar
+    const progressPercentage = (userData.points / userData.nextLevelPoints) * 100;
+    document.getElementById('levelProgress').style.width = progressPercentage + '%';
+    
+    // Update stats
+    document.getElementById('currentStreak').textContent = userData.streak;
+    document.getElementById('healthScore').textContent = userData.healthScore;
+    document.getElementById('totalBadges').textContent = userData.totalBadges;
+    document.getElementById('daysTracked').textContent = userData.daysTracked;
+    
+    // Load recent achievements
+    loadRecentAchievements(userData.recentAchievements);
+}
+
+function getUserGamificationData() {
+    // Get data from localStorage or calculate from user activity
+    const storedData = JSON.parse(localStorage.getItem('gamificationData') || '{}');
+    
+    return {
+        level: storedData.level || 1,
+        points: storedData.points || 0,
+        nextLevelPoints: 100,
+        streak: storedData.streak || 0,
+        healthScore: storedData.healthScore || 85,
+        totalBadges: storedData.totalBadges || 0,
+        daysTracked: storedData.daysTracked || 0,
+        recentAchievements: storedData.recentAchievements || []
+    };
+}
+
+function loadRecentAchievements(achievements) {
+    const container = document.getElementById('recentAchievements');
+    
+    if (achievements.length === 0) {
+        container.innerHTML = `
+            <div class="no-achievements">
+                <i class="fas fa-medal"></i>
+                <p>No achievements yet. Start tracking to earn your first badge!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = achievements.map(achievement => `
+        <div class="achievement-item">
+            <div class="achievement-icon ${achievement.rarity}">
+                <i class="${achievement.icon}"></i>
+            </div>
+            <div class="achievement-info">
+                <h5>${achievement.name}</h5>
+                <p>${achievement.description}</p>
+                <span class="achievement-date">${achievement.date}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadAchievements() {
+    const achievementsGrid = document.getElementById('achievementsGrid');
+    if (!achievementsGrid) return;
+    
+    const achievements = [
+        {
+            id: 1,
+            name: "First Steps",
+            description: "Log your first period",
+            icon: "fas fa-baby",
+            rarity: "bronze",
+            points: 50,
+            earned: true,
+            category: "consistency"
+        },
+        {
+            id: 2,
+            name: "Week Warrior",
+            description: "Track for 7 consecutive days",
+            icon: "fas fa-calendar-week",
+            rarity: "silver",
+            points: 100,
+            earned: false,
+            category: "consistency"
+        },
+        {
+            id: 3,
+            name: "Health Hero",
+            description: "Maintain 90+ health score for a week",
+            icon: "fas fa-heart",
+            rarity: "gold",
+            points: 200,
+            earned: false,
+            category: "health"
+        },
+        {
+            id: 4,
+            name: "Knowledge Seeker",
+            description: "Read 5 health articles",
+            icon: "fas fa-book",
+            rarity: "bronze",
+            points: 75,
+            earned: false,
+            category: "knowledge"
+        },
+        {
+            id: 5,
+            name: "Month Master",
+            description: "Track for 30 consecutive days",
+            icon: "fas fa-calendar-alt",
+            rarity: "gold",
+            points: 300,
+            earned: false,
+            category: "consistency"
+        },
+        {
+            id: 6,
+            name: "Symptom Tracker",
+            description: "Log symptoms for 10 days",
+            icon: "fas fa-heartbeat",
+            rarity: "silver",
+            points: 150,
+            earned: false,
+            category: "health"
+        }
+    ];
+    
+    achievementsGrid.innerHTML = achievements.map(achievement => `
+        <div class="achievement-card ${achievement.earned ? 'earned' : ''}" onclick="viewAchievement(${achievement.id})">
+            <div class="achievement-icon ${achievement.rarity}">
+                <i class="${achievement.icon}"></i>
+            </div>
+            <h5>${achievement.name}</h5>
+            <p>${achievement.description}</p>
+            <div class="achievement-points">${achievement.points} pts</div>
+        </div>
+    `).join('');
+}
+
+function loadChallenges() {
+    const dailyChallenges = document.getElementById('dailyChallenges');
+    const weeklyChallenges = document.getElementById('weeklyChallenges');
+    
+    if (dailyChallenges) {
+        dailyChallenges.innerHTML = `
+            <div class="challenge-card">
+                <h5>Daily Logging</h5>
+                <p>Log your period or symptoms today</p>
+                <div class="challenge-progress">
+                    <div class="challenge-progress-fill" style="width: 60%"></div>
+                </div>
+                <div class="challenge-reward">
+                    <span>Progress: 3/5 days</span>
+                    <span>+25 points</span>
+                </div>
+            </div>
+            <div class="challenge-card">
+                <h5>Health Check-in</h5>
+                <p>Complete your daily health assessment</p>
+                <div class="challenge-progress">
+                    <div class="challenge-progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="challenge-reward">
+                    <span>Completed!</span>
+                    <span>+15 points</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (weeklyChallenges) {
+        weeklyChallenges.innerHTML = `
+            <div class="challenge-card">
+                <h5>Consistency Champion</h5>
+                <p>Log every day for a week</p>
+                <div class="challenge-progress">
+                    <div class="challenge-progress-fill" style="width: 40%"></div>
+                </div>
+                <div class="challenge-reward">
+                    <span>Progress: 3/7 days</span>
+                    <span>+100 points</span>
+                </div>
+            </div>
+            <div class="challenge-card">
+                <h5>Health Explorer</h5>
+                <p>Read 3 health articles this week</p>
+                <div class="challenge-progress">
+                    <div class="challenge-progress-fill" style="width: 67%"></div>
+                </div>
+                <div class="challenge-reward">
+                    <span>Progress: 2/3 articles</span>
+                    <span>+75 points</span>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function loadLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboardList');
+    if (!leaderboardList) return;
+    
+    const leaderboard = [
+        { rank: 1, name: "Sarah M.", points: 1250, streak: 45, healthScore: 95 },
+        { rank: 2, name: "Emma L.", points: 1180, streak: 38, healthScore: 92 },
+        { rank: 3, name: "You", points: 950, streak: 25, healthScore: 88 },
+        { rank: 4, name: "Lisa K.", points: 875, streak: 22, healthScore: 85 },
+        { rank: 5, name: "Anna R.", points: 720, streak: 18, healthScore: 82 }
+    ];
+    
+    leaderboardList.innerHTML = leaderboard.map(user => `
+        <div class="leaderboard-item">
+            <div class="leaderboard-rank rank-${user.rank <= 3 ? user.rank : 'other'}">
+                ${user.rank}
+            </div>
+            <div class="leaderboard-info">
+                <div class="leaderboard-name">${user.name}</div>
+                <div class="leaderboard-stats">${user.streak} day streak • ${user.healthScore} health score</div>
+            </div>
+            <div class="leaderboard-score">${user.points}</div>
+        </div>
+    `).join('');
+}
+
+function filterAchievements(category) {
+    // Remove active class from all category buttons
+    const categoryBtns = document.querySelectorAll('.category-btn');
+    categoryBtns.forEach(btn => btn.classList.remove('active'));
+    
+    // Add active class to selected button
+    const selectedBtn = document.querySelector(`[onclick="filterAchievements('${category}')"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Filter achievements (in a real app, this would filter the data)
+    console.log('Filtering achievements by category:', category);
+}
+
+function filterLeaderboard(type) {
+    // Remove active class from all filter buttons
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => btn.classList.remove('active'));
+    
+    // Add active class to selected button
+    const selectedBtn = document.querySelector(`[onclick="filterLeaderboard('${type}')"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Filter leaderboard (in a real app, this would sort the data)
+    console.log('Filtering leaderboard by type:', type);
+}
+
+function viewAchievement(achievementId) {
+    console.log('Viewing achievement:', achievementId);
+    // In a real app, this would show achievement details
+}
+
+// Award points and check for achievements
+function awardPoints(activity, points) {
+    const userData = getUserGamificationData();
+    userData.points += points;
+    
+    // Check for level up
+    if (userData.points >= userData.nextLevelPoints) {
+        userData.level += 1;
+        userData.nextLevelPoints = userData.level * 100;
+        showLevelUpNotification(userData.level);
+    }
+    
+    // Save updated data
+    localStorage.setItem('gamificationData', JSON.stringify(userData));
+    
+    // Check for new achievements
+    checkAchievements(activity);
+}
+
+function showLevelUpNotification(level) {
+    // Create a notification element
+    const notification = document.createElement('div');
+    notification.className = 'level-up-notification';
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-star"></i>
+            <h3>Level Up!</h3>
+            <p>You've reached level ${level}!</p>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+function checkAchievements(activity) {
+    // Check for various achievements based on user activity
+    console.log('Checking achievements for activity:', activity);
+    // In a real app, this would check against achievement criteria
+}
+
 // Add Period Modal
 function showAddPeriodModal() {
     document.getElementById('addPeriodModal').style.display = 'block';
