@@ -1475,6 +1475,12 @@ body {
     align-items: center;
 }
 
+.calendar-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .card-header h3 {
     font-size: 1.3rem;
     font-weight: 600;

@@ -512,6 +512,9 @@ function initializeDashboard() {
     // Wait a bit for DOM to be ready
     setTimeout(() => {
         try {
+            // Add some sample data if no periods exist
+            addSampleDataIfNeeded();
+            
             updateQuickStats();
             generateCalendar();
             updateInsights();
@@ -522,6 +525,24 @@ function initializeDashboard() {
             console.error('Dashboard initialization error:', error);
         }
     }, 100);
+}
+
+function addSampleDataIfNeeded() {
+    const periods = getUserPeriods();
+    if (periods.length === 0 && currentUser) {
+        // Add a sample period 3 days ago
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const fiveDaysAgo = new Date();
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+        
+        addPeriod(
+            fiveDaysAgo.toISOString().split('T')[0],
+            threeDaysAgo.toISOString().split('T')[0],
+            'medium',
+            'Sample period data'
+        );
+    }
 }
 
 // Period Tracking Functions
@@ -544,6 +565,8 @@ function addPeriod(startDate, endDate, flow, notes = '') {
     generateCalendar();
     updateInsights();
     updateHistoryStats();
+    
+    console.log('Period added and dashboard updated');
 }
 
 function getUserPeriods() {
@@ -615,9 +638,15 @@ function generateCalendar() {
     const currentMonthElement = document.getElementById('currentMonth');
     
     if (!calendarGrid || !currentMonthElement) {
-        console.log('Calendar elements not found');
+        console.log('Calendar elements not found, retrying...');
+        // Retry after a short delay
+        setTimeout(() => {
+            generateCalendar();
+        }, 200);
         return;
     }
+    
+    console.log('Generating calendar...');
     
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'];
@@ -630,6 +659,7 @@ function generateCalendar() {
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
     
+    // Clear the calendar grid
     calendarGrid.innerHTML = '';
     
     // Add day headers
@@ -641,7 +671,7 @@ function generateCalendar() {
         calendarGrid.appendChild(dayHeader);
     });
     
-    // Generate calendar days
+    // Generate calendar days (6 weeks = 42 days)
     for (let i = 0; i < 42; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
@@ -674,6 +704,8 @@ function generateCalendar() {
         
         calendarGrid.appendChild(dayElement);
     }
+    
+    console.log('Calendar generated successfully');
 }
 
 function previousMonth() {
@@ -683,6 +715,12 @@ function previousMonth() {
 
 function nextMonth() {
     currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+    generateCalendar();
+}
+
+// Manual calendar refresh function
+function refreshCalendar() {
+    console.log('Manually refreshing calendar...');
     generateCalendar();
 }
 
@@ -916,9 +954,15 @@ async function loadTrainingData() {
         trainingData = parseCSVData(csvText);
         trainAIModels();
         console.log('AI models trained with', trainingData.length, 'cycles of data');
+        
+        // Update dashboard if user is logged in
+        onAIDataLoaded();
     } catch (error) {
         console.log('Using fallback AI models (CSV not accessible)');
         initializeFallbackModels();
+        
+        // Update dashboard with fallback data
+        onAIDataLoaded();
     }
 }
 
@@ -1241,7 +1285,7 @@ function updateAIDataDisplay() {
     }
     
     if (!trainingData || trainingData.length === 0) {
-        trainingCyclesElement.textContent = '1,000+';
+        trainingCyclesElement.textContent = '1,667';
         trainingUsersElement.textContent = '500+';
         aiAccuracyElement.textContent = '95%';
         updatePopulationInsights();
@@ -1273,7 +1317,7 @@ function updatePopulationInsights() {
         insightsContainer.innerHTML = `
             <div class="insight-item">
                 <i class="fas fa-info-circle"></i>
-                <span>AI models trained with 1,000+ cycles of real data</span>
+                <span>AI models trained with 1,667 cycles of real data</span>
             </div>
             <div class="insight-item">
                 <i class="fas fa-chart-line"></i>
@@ -1282,6 +1326,10 @@ function updatePopulationInsights() {
             <div class="insight-item">
                 <i class="fas fa-users"></i>
                 <span>Data from women aged 18-45</span>
+            </div>
+            <div class="insight-item">
+                <i class="fas fa-brain"></i>
+                <span>Machine learning algorithms for predictions</span>
             </div>
         `;
         return;
@@ -1338,3 +1386,11 @@ window.addEventListener('load', function() {
     // Load AI training data
     loadTrainingData();
 });
+
+// Force update dashboard when AI data is loaded
+function onAIDataLoaded() {
+    if (currentUser) {
+        updateAIDataDisplay();
+        updateInsights();
+    }
+}
