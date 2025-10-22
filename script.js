@@ -803,8 +803,6 @@ async function initializeDashboard() {
             await updateQuickStats();
             generateCalendar();
             await updateInsights();
-            await updateHistoryStats();
-            updateAIDataDisplay();
             await loadTodayLog();
         } catch (error) {
             console.error('Dashboard initialization error:', error);
@@ -854,12 +852,34 @@ async function addPeriod(startDate, endDate, flow, notes = '') {
         updateQuickStats();
         generateCalendar();
         updateInsights();
-        updateHistoryStats();
         
         console.log('Period added and dashboard updated');
     } catch (error) {
         console.error('Error adding period:', error);
         showError('Failed to add period. Please try again.');
+    }
+}
+
+async function deletePeriod(periodId) {
+    if (!cycliqueDB) {
+        console.error('Database not initialized');
+        return;
+    }
+    
+    try {
+        await cycliqueDB.deletePeriod(periodId);
+        
+        // Update dashboard
+        updateQuickStats();
+        generateCalendar();
+        updateInsights();
+        updatePeriodsList();
+        
+        showSuccess('Period deleted successfully!');
+        console.log('Period deleted and dashboard updated');
+    } catch (error) {
+        console.error('Error deleting period:', error);
+        showError('Failed to delete period. Please try again.');
     }
 }
 
@@ -1008,7 +1028,21 @@ async function generateCalendar() {
             const periodEndDate = new Date(period.endDate);
             if (date >= periodStartDate && date <= periodEndDate) {
                 dayElement.classList.add('period');
+                dayElement.title = `Period Day - ${period.flow} flow`;
                 console.log('Period day marked:', date.getDate());
+                
+                // Add delete button for period days
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '×';
+                deleteBtn.className = 'period-delete-btn';
+                deleteBtn.title = 'Delete this period';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const startDateStr = periodStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const endDateStr = periodEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    confirmDeletePeriod(period.id, `${startDateStr} - ${endDateStr}`);
+                };
+                dayElement.appendChild(deleteBtn);
             }
         });
         
@@ -1094,6 +1128,652 @@ function generateSimpleCalendar() {
     }
     
     console.log('Simple calendar generated with', calendarGrid.children.length, 'elements');
+}
+
+// Manage Periods Functions
+function showPeriodsList() {
+    console.log('Opening periods list modal...');
+    const modal = document.getElementById('managePeriodsModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        updatePeriodsList();
+        console.log('Modal opened successfully');
+    } else {
+        console.error('Modal element not found');
+    }
+}
+
+async function updatePeriodsList() {
+    const periodsListElement = document.getElementById('periodsList');
+    if (!periodsListElement) {
+        console.log('Periods list element not found');
+        return;
+    }
+    
+    try {
+        const periods = await getUserPeriods();
+        console.log('Updating periods list with', periods.length, 'periods');
+        
+        if (periods.length === 0) {
+            periodsListElement.innerHTML = `
+                <div class="period-item">
+                    <div class="period-info">
+                        <div class="period-dates">No periods recorded yet</div>
+                        <div class="period-details">Add your first period to start tracking</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort periods by start date (newest first)
+        const sortedPeriods = periods.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+        
+        periodsListElement.innerHTML = sortedPeriods.map(period => {
+            const startDate = new Date(period.startDate);
+            const endDate = new Date(period.endDate);
+            const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            
+            const startDateStr = startDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const endDateStr = endDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            const flowClass = `flow-${period.flow}`;
+            const flowLabel = period.flow.charAt(0).toUpperCase() + period.flow.slice(1);
+            
+            return `
+                <div class="period-item">
+                    <div class="period-info">
+                        <div class="period-dates">
+                            ${startDateStr} - ${endDateStr}
+                            <span class="flow-indicator ${flowClass}">${flowLabel}</span>
+                        </div>
+                        <div class="period-details">
+                            ${duration} day${duration !== 1 ? 's' : ''} • 
+                            ${period.notes ? period.notes : 'No notes'}
+                        </div>
+                    </div>
+                    <div class="period-actions">
+                        <button class="delete-btn" onclick="confirmDeletePeriod('${period.id}', '${startDateStr} - ${endDateStr}')" title="Delete Period">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error updating periods list:', error);
+        periodsListElement.innerHTML = `
+            <div class="period-item">
+                <div class="period-info">
+                    <div class="period-dates">Error loading periods</div>
+                    <div class="period-details">Please try refreshing the page</div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function confirmDeletePeriod(periodId, periodDates) {
+    if (confirm(`Are you sure you want to delete the period from ${periodDates}?\n\nThis action cannot be undone.`)) {
+        deletePeriod(periodId);
+    }
+}
+
+// Tab switching function
+function switchTab(tabName) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected tab and content
+    document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+    document.getElementById(`${tabName}Tab`).classList.add('active');
+    
+    // Load data for the active tab
+    if (tabName === 'periods') {
+        updatePeriodsList();
+    } else if (tabName === 'symptoms') {
+        loadTodayLog();
+    }
+}
+
+// Log Symptoms Modal Functions
+function showLogSymptomsModal() {
+    console.log('Opening log symptoms modal...');
+    const modal = document.getElementById('logSymptomsModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Set today's date
+        const today = new Date();
+        const dateStr = today.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        document.getElementById('symptomsDate').textContent = dateStr;
+        
+        // Load existing data for today
+        loadTodayLog();
+        console.log('Log symptoms modal opened successfully');
+    } else {
+        console.error('Log symptoms modal element not found');
+    }
+}
+
+// Chatbot Functions
+function toggleChatbot() {
+    const modal = document.getElementById('chatbotModal');
+    if (modal.style.display === 'block') {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    } else {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        // Focus on input when opened
+        setTimeout(() => {
+            document.getElementById('chatbotInput').focus();
+        }, 100);
+    }
+}
+
+function handleChatbotKeypress(event) {
+    if (event.key === 'Enter') {
+        sendChatbotMessage();
+    }
+}
+
+function sendChatbotMessage() {
+    const input = document.getElementById('chatbotInput');
+    const message = input.value.trim();
+    
+    if (message === '') return;
+    
+    // Add user message
+    addMessage(message, 'user');
+    
+    // Clear input
+    input.value = '';
+    
+    // Get bot response
+    const response = getBotResponse(message);
+    
+    // Add bot response with delay
+    setTimeout(() => {
+        addMessage(response, 'bot');
+    }, 1000);
+}
+
+function addMessage(text, sender) {
+    const messagesContainer = document.getElementById('chatbotMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}-message`;
+    
+    const icon = sender === 'bot' ? 'fas fa-robot' : 'fas fa-user';
+    
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            <i class="${icon}"></i>
+            <div class="message-text">${text}</div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function getBotResponse(userMessage) {
+    const message = userMessage.toLowerCase();
+    
+    // Period-related questions
+    if (message.includes('period') || message.includes('menstrual')) {
+        if (message.includes('normal') || message.includes('regular')) {
+            return "A normal menstrual cycle typically lasts 21-35 days, with periods lasting 3-7 days. However, every woman is different, and what's normal for you might vary. Track your cycles to understand your personal pattern.";
+        }
+        if (message.includes('irregular') || message.includes('late')) {
+            return "Irregular periods can be caused by stress, weight changes, hormonal imbalances, or medical conditions. If your periods are consistently irregular or you're concerned, it's best to consult with a healthcare provider.";
+        }
+        if (message.includes('pain') || message.includes('cramp')) {
+            return "Period cramps are common and usually normal. You can try heat therapy, gentle exercise, or over-the-counter pain relievers. If cramps are severe or interfere with daily activities, consider speaking with a doctor.";
+        }
+        return "I can help with period-related questions! Feel free to ask about cycle length, symptoms, irregular periods, or any other menstrual health concerns.";
+    }
+    
+    // Symptom questions
+    if (message.includes('symptom') || message.includes('bloating') || message.includes('fatigue')) {
+        return "Common period symptoms include cramps, bloating, fatigue, mood changes, breast tenderness, and headaches. These are usually normal, but if symptoms are severe or concerning, please consult a healthcare provider.";
+    }
+    
+    // Health questions
+    if (message.includes('health') || message.includes('doctor') || message.includes('medical')) {
+        return "For serious health concerns, always consult with a qualified healthcare provider. I can provide general information, but I'm not a substitute for professional medical advice.";
+    }
+    
+    // General questions
+    if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
+        return "Hello! I'm here to help answer your health and period-related questions. What would you like to know?";
+    }
+    
+    if (message.includes('help') || message.includes('what can you do')) {
+        return "I can help with questions about periods, menstrual cycles, symptoms, general health, and provide educational information. Just ask me anything!";
+    }
+    
+    // Default response
+    return "I understand you're asking about: '" + userMessage + "'. While I can provide general health information, for specific medical concerns, please consult with a healthcare provider. Is there anything else I can help you with?";
+}
+
+
+// Health Education Functions
+function showEducationModal() {
+    const modal = document.getElementById('educationModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        loadEducationContent();
+    }
+}
+
+function showEducationTab(tabName) {
+    // Hide all tabs
+    const tabs = document.querySelectorAll('.education-tab-content');
+    tabs.forEach(tab => tab.style.display = 'none');
+    
+    // Remove active class from all nav buttons
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + 'Tab');
+    if (selectedTab) {
+        selectedTab.style.display = 'block';
+    }
+    
+    // Add active class to selected nav button
+    const selectedBtn = document.querySelector(`[onclick="showEducationTab('${tabName}')"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Load content based on tab
+    if (tabName === 'articles') {
+        loadArticles();
+    } else if (tabName === 'videos') {
+        loadVideos();
+    } else if (tabName === 'bookmarks') {
+        loadBookmarks();
+    }
+}
+
+function loadEducationContent() {
+    loadArticles();
+}
+
+function loadArticles() {
+    const articlesGrid = document.getElementById('articlesGrid');
+    if (!articlesGrid) return;
+    
+    const articles = [
+        {
+            id: 1,
+            title: "Understanding Your Menstrual Cycle",
+            content: "Learn about the phases of your menstrual cycle and what's normal for your body...",
+            category: "menstrual",
+            readTime: "5 min",
+            image: "fas fa-heartbeat"
+        },
+        {
+            id: 2,
+            title: "Managing Period Pain Naturally",
+            content: "Discover natural remedies and techniques to help alleviate menstrual cramps...",
+            category: "menstrual",
+            readTime: "7 min",
+            image: "fas fa-leaf"
+        },
+        {
+            id: 3,
+            title: "Fertility Awareness Methods",
+            content: "Learn about natural family planning and fertility tracking methods...",
+            category: "fertility",
+            readTime: "10 min",
+            image: "fas fa-baby"
+        },
+        {
+            id: 4,
+            title: "Nutrition for Hormonal Balance",
+            content: "Discover foods that can help support your hormonal health throughout your cycle...",
+            category: "wellness",
+            readTime: "8 min",
+            image: "fas fa-apple-alt"
+        },
+        {
+            id: 5,
+            title: "Mental Health and Menstruation",
+            content: "Understanding the connection between your mental health and menstrual cycle...",
+            category: "mental",
+            readTime: "6 min",
+            image: "fas fa-brain"
+        },
+        {
+            id: 6,
+            title: "Exercise During Your Period",
+            content: "Safe and effective exercises you can do during your menstrual cycle...",
+            category: "wellness",
+            readTime: "9 min",
+            image: "fas fa-dumbbell"
+        }
+    ];
+    
+    articlesGrid.innerHTML = articles.map(article => `
+        <div class="article-card" onclick="openArticle(${article.id})">
+            <div class="article-image-large">
+                <i class="${article.image}"></i>
+            </div>
+            <div class="article-card-content">
+                <h5>${article.title}</h5>
+                <p>${article.content}</p>
+                <div class="article-meta">
+                    <span class="read-time"><i class="fas fa-clock"></i> ${article.readTime}</span>
+                    <span class="category">${article.category.charAt(0).toUpperCase() + article.category.slice(1)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadVideos() {
+    const videosGrid = document.getElementById('videosGrid');
+    if (!videosGrid) return;
+    
+    const videos = [
+        {
+            id: 1,
+            title: "Yoga for Period Relief",
+            description: "Gentle yoga poses to help alleviate menstrual cramps and discomfort",
+            category: "wellness",
+            duration: "8:30",
+            thumbnail: "fas fa-play"
+        },
+        {
+            id: 2,
+            title: "Meditation for PMS",
+            description: "Guided meditation techniques to help manage premenstrual symptoms",
+            category: "mental",
+            duration: "12:15",
+            thumbnail: "fas fa-play"
+        },
+        {
+            id: 3,
+            title: "Nutrition for Hormonal Health",
+            description: "Learn about foods that support hormonal balance throughout your cycle",
+            category: "wellness",
+            duration: "15:45",
+            thumbnail: "fas fa-play"
+        },
+        {
+            id: 4,
+            title: "Understanding Fertility Signs",
+            description: "Educational video about recognizing your body's fertility signals",
+            category: "fertility",
+            duration: "10:20",
+            thumbnail: "fas fa-play"
+        }
+    ];
+    
+    videosGrid.innerHTML = videos.map(video => `
+        <div class="video-card-modal" onclick="playVideo(${video.id})">
+            <div class="video-thumbnail">
+                <i class="${video.thumbnail}"></i>
+                <div class="video-duration">${video.duration}</div>
+            </div>
+            <div class="video-card-content">
+                <h5>${video.title}</h5>
+                <p>${video.description}</p>
+                <div class="video-meta">
+                    <span class="video-category">${video.category.charAt(0).toUpperCase() + video.category.slice(1)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadBookmarks() {
+    const bookmarksGrid = document.getElementById('bookmarksGrid');
+    if (!bookmarksGrid) return;
+    
+    // Load bookmarks from localStorage
+    const bookmarks = JSON.parse(localStorage.getItem('educationBookmarks') || '[]');
+    
+    if (bookmarks.length === 0) {
+        bookmarksGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #666;">
+                <i class="fas fa-bookmark" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <p>No bookmarks yet. Start exploring articles and videos to bookmark your favorites!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    bookmarksGrid.innerHTML = bookmarks.map(bookmark => `
+        <div class="article-card" onclick="openBookmark('${bookmark.type}', ${bookmark.id})">
+            <div class="article-image-large">
+                <i class="${bookmark.image}"></i>
+            </div>
+            <div class="article-card-content">
+                <h5>${bookmark.title}</h5>
+                <p>${bookmark.description}</p>
+                <div class="article-meta">
+                    <span class="read-time"><i class="fas fa-${bookmark.type === 'article' ? 'clock' : 'play'}"></i> ${bookmark.duration}</span>
+                    <span class="category">${bookmark.category}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterEducationContent(category) {
+    // Remove active class from all filter buttons
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => btn.classList.remove('active'));
+    
+    // Add active class to selected button
+    const selectedBtn = document.querySelector(`[onclick="filterEducationContent('${category}')"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Filter content based on category
+    const articles = document.querySelectorAll('.article-card, .video-card-modal');
+    articles.forEach(article => {
+        if (category === 'all') {
+            article.style.display = 'block';
+        } else {
+            const articleCategory = article.querySelector('.category').textContent.toLowerCase();
+            if (articleCategory.includes(category)) {
+                article.style.display = 'block';
+            } else {
+                article.style.display = 'none';
+            }
+        }
+    });
+}
+
+function searchEducationContent() {
+    const searchTerm = document.getElementById('educationSearch').value.toLowerCase();
+    const articles = document.querySelectorAll('.article-card, .video-card-modal');
+    
+    articles.forEach(article => {
+        const title = article.querySelector('h5').textContent.toLowerCase();
+        const description = article.querySelector('p').textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || description.includes(searchTerm)) {
+            article.style.display = 'block';
+        } else {
+            article.style.display = 'none';
+        }
+    });
+}
+
+function openArticle(articleId) {
+    const modal = document.getElementById('articleModal');
+    const content = document.getElementById('articleContent');
+    
+    if (modal && content) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Load article content (in a real app, this would fetch from a database)
+        const articleContent = getArticleContent(articleId);
+        content.innerHTML = articleContent;
+    }
+}
+
+function playVideo(videoId) {
+    const modal = document.getElementById('videoModal');
+    const container = document.getElementById('videoContainer');
+    const info = document.getElementById('videoInfo');
+    
+    if (modal && container && info) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Load video content (in a real app, this would load actual video)
+        const videoContent = getVideoContent(videoId);
+        container.innerHTML = videoContent;
+        info.innerHTML = getVideoInfo(videoId);
+    }
+}
+
+function getArticleContent(articleId) {
+    const articles = {
+        1: `
+            <h1>Understanding Your Menstrual Cycle</h1>
+            <p><strong>Published:</strong> March 15, 2024 | <strong>Read time:</strong> 5 minutes</p>
+            
+            <h2>What is a Menstrual Cycle?</h2>
+            <p>The menstrual cycle is a natural process that occurs in women's bodies, typically lasting 21-35 days. It involves several phases that prepare the body for potential pregnancy.</p>
+            
+            <h2>The Four Phases</h2>
+            <h3>1. Menstrual Phase (Days 1-5)</h3>
+            <p>This is when you have your period. The lining of the uterus sheds, and you experience bleeding. This phase typically lasts 3-7 days.</p>
+            
+            <h3>2. Follicular Phase (Days 1-13)</h3>
+            <p>During this phase, the pituitary gland releases follicle-stimulating hormone (FSH), which stimulates the growth of follicles in the ovaries.</p>
+            
+            <h3>3. Ovulation (Day 14)</h3>
+            <p>An egg is released from the ovary and travels down the fallopian tube. This is when you're most fertile.</p>
+            
+            <h3>4. Luteal Phase (Days 15-28)</h3>
+            <p>If the egg isn't fertilized, the corpus luteum breaks down, and hormone levels drop, leading to menstruation.</p>
+            
+            <h2>What's Normal?</h2>
+            <p>Every woman's cycle is different. What's normal for you might not be normal for someone else. Track your cycle to understand your personal pattern.</p>
+            
+            <h2>When to See a Doctor</h2>
+            <p>Consult a healthcare provider if you experience:</p>
+            <ul>
+                <li>Very heavy bleeding</li>
+                <li>Severe pain</li>
+                <li>Irregular cycles</li>
+                <li>Missed periods</li>
+            </ul>
+        `,
+        2: `
+            <h1>Managing Period Pain Naturally</h1>
+            <p><strong>Published:</strong> March 10, 2024 | <strong>Read time:</strong> 7 minutes</p>
+            
+            <h2>Understanding Period Pain</h2>
+            <p>Period pain, or dysmenorrhea, affects many women during their menstrual cycle. While some discomfort is normal, severe pain isn't and should be addressed.</p>
+            
+            <h2>Natural Remedies</h2>
+            <h3>Heat Therapy</h3>
+            <p>Applying heat to your lower abdomen can help relax the muscles and reduce cramping. Use a heating pad or hot water bottle.</p>
+            
+            <h3>Exercise</h3>
+            <p>Light exercise like walking or yoga can help increase blood flow and reduce pain. Even gentle stretching can be beneficial.</p>
+            
+            <h3>Dietary Changes</h3>
+            <p>Certain foods can help reduce inflammation and pain:</p>
+            <ul>
+                <li>Omega-3 fatty acids (fish, flaxseeds)</li>
+                <li>Magnesium-rich foods (dark chocolate, nuts)</li>
+                <li>Anti-inflammatory foods (ginger, turmeric)</li>
+            </ul>
+            
+            <h2>Lifestyle Tips</h2>
+            <ul>
+                <li>Stay hydrated</li>
+                <li>Get enough sleep</li>
+                <li>Manage stress</li>
+                <li>Avoid caffeine and alcohol</li>
+            </ul>
+        `
+    };
+    
+    return articles[articleId] || '<p>Article not found.</p>';
+}
+
+function getVideoContent(videoId) {
+    return `
+        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000; color: white; font-size: 1.2rem;">
+            <div style="text-align: center;">
+                <i class="fas fa-play-circle" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                <p>Video Player</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">Video ID: ${videoId}</p>
+                <p style="font-size: 0.8rem; opacity: 0.5;">In a real application, this would load an actual video player</p>
+            </div>
+        </div>
+    `;
+}
+
+function getVideoInfo(videoId) {
+    const videos = {
+        1: '<h3>Yoga for Period Relief</h3><p>Gentle yoga poses to help alleviate menstrual cramps and discomfort. Perfect for beginners and those looking for natural pain relief.</p>',
+        2: '<h3>Meditation for PMS</h3><p>Guided meditation techniques to help manage premenstrual symptoms and promote emotional well-being during your cycle.</p>',
+        3: '<h3>Nutrition for Hormonal Health</h3><p>Learn about foods that support hormonal balance throughout your cycle and promote overall reproductive health.</p>',
+        4: '<h3>Understanding Fertility Signs</h3><p>Educational content about recognizing your body\'s fertility signals and understanding your reproductive cycle.</p>'
+    };
+    
+    return videos[videoId] || '<p>Video information not available.</p>';
+}
+
+function bookmarkArticle() {
+    // Implementation for bookmarking articles
+    console.log('Bookmarking article...');
+}
+
+function shareArticle() {
+    // Implementation for sharing articles
+    console.log('Sharing article...');
+}
+
+function bookmarkVideo() {
+    // Implementation for bookmarking videos
+    console.log('Bookmarking video...');
+}
+
+function shareVideo() {
+    // Implementation for sharing videos
+    console.log('Sharing video...');
+}
+
+function openBookmark(type, id) {
+    if (type === 'article') {
+        openArticle(id);
+    } else if (type === 'video') {
+        playVideo(id);
+    }
 }
 
 // Add Period Modal
