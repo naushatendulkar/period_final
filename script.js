@@ -769,6 +769,10 @@ function showDashboard() {
     
     // Initialize dashboard
     initializeDashboard();
+    
+    // Update new dashboard cards
+    updateAchievementsCard();
+    updatePregnancyCard();
 }
 
 function hideDashboard() {
@@ -2810,4 +2814,538 @@ function onAIDataLoaded() {
         updateAIDataDisplay();
         updateInsights();
     }
+}
+
+// ========================================
+// PREGNANCY DASHBOARD FUNCTIONS
+// ========================================
+
+// Pregnancy mode state
+let pregnancyMode = false;
+let pregnancyData = null;
+let kickCounter = {
+    count: 0,
+    timer: null,
+    startTime: null,
+    isRunning: false
+};
+let contractionTimer = {
+    isActive: false,
+    startTime: null,
+    contractions: []
+};
+
+// Show pregnancy modal (full dashboard)
+function showPregnancyModal() {
+    const modal = document.getElementById('pregnancySetupModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        loadPregnancyData();
+    }
+}
+
+// Update pregnancy dashboard card
+function updatePregnancyCard() {
+    // Get pregnancy data from localStorage
+    pregnancyData = JSON.parse(localStorage.getItem('pregnancyData') || '{}');
+    
+    const statusElement = document.getElementById('pregnancyStatus');
+    const daysRemaining = document.getElementById('quickDaysRemaining');
+    const currentWeek = document.getElementById('quickCurrentWeek');
+    const weightGain = document.getElementById('quickWeightGain');
+    
+    if (pregnancyData && pregnancyData.dueDate) {
+        // Calculate pregnancy info
+        const dueDate = new Date(pregnancyData.dueDate);
+        const today = new Date();
+        const timeDiff = dueDate.getTime() - today.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const weeksDiff = Math.ceil(daysDiff / 7);
+        const currentWeekNum = Math.max(1, 40 - weeksDiff);
+        
+        // Update status
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div class="status-icon">
+                    <i class="fas fa-baby"></i>
+                </div>
+                <div class="status-text">
+                    <h5>Pregnant - Week ${currentWeekNum}</h5>
+                    <p>${Math.max(0, daysDiff)} days until due date</p>
+                </div>
+            `;
+        }
+        
+        // Update stats
+        if (daysRemaining) daysRemaining.textContent = Math.max(0, daysDiff);
+        if (currentWeek) currentWeek.textContent = currentWeekNum;
+        if (weightGain) weightGain.textContent = '0 kg'; // This would be calculated from weight entries
+    } else {
+        // No pregnancy data
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div class="status-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <div class="status-text">
+                    <h5>Not Pregnant</h5>
+                    <p>Set up your pregnancy to start tracking</p>
+                </div>
+            `;
+        }
+        
+        if (daysRemaining) daysRemaining.textContent = '--';
+        if (currentWeek) currentWeek.textContent = '--';
+        if (weightGain) weightGain.textContent = '--';
+    }
+}
+
+// Update achievements dashboard card
+function updateAchievementsCard() {
+    // Get gamification data
+    const userData = getUserGamificationData();
+    
+    // Update quick stats
+    const quickLevel = document.getElementById('quickLevel');
+    const quickStreak = document.getElementById('quickStreak');
+    const quickBadges = document.getElementById('quickBadges');
+    const quickProgress = document.getElementById('quickProgress');
+    const quickProgressFill = document.getElementById('quickProgressFill');
+    
+    if (quickLevel) quickLevel.textContent = userData.level;
+    if (quickStreak) quickStreak.textContent = userData.streak;
+    if (quickBadges) quickBadges.textContent = userData.totalBadges;
+    if (quickProgress) quickProgress.textContent = `${userData.points}/${userData.nextLevelPoints}`;
+    if (quickProgressFill) {
+        const progressPercentage = (userData.points / userData.nextLevelPoints) * 100;
+        quickProgressFill.style.width = progressPercentage + '%';
+    }
+    
+    // Update recent achievement
+    const recentAchievement = document.getElementById('recentAchievement');
+    if (recentAchievement && userData.recentAchievements.length > 0) {
+        const latest = userData.recentAchievements[0];
+        recentAchievement.innerHTML = `
+            <div class="achievement-icon">
+                <i class="${latest.icon}"></i>
+            </div>
+            <div class="achievement-text">
+                <h5>${latest.name}</h5>
+                <p>${latest.description}</p>
+            </div>
+        `;
+    }
+}
+
+// Load pregnancy data
+function loadPregnancyData() {
+    // Get pregnancy data from localStorage
+    pregnancyData = JSON.parse(localStorage.getItem('pregnancyData') || '{}');
+    
+    if (!pregnancyData.dueDate) {
+        // Show setup modal if no pregnancy data
+        showPregnancySetup();
+        return;
+    }
+    
+    // Update pregnancy dashboard
+    updatePregnancyDashboard();
+}
+
+// Show pregnancy setup modal
+function showPregnancySetup() {
+    const modal = document.getElementById('pregnancySetupModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Select setup method
+function selectSetupMethod(method) {
+    const setupForm = document.getElementById('setupForm');
+    if (setupForm) {
+        setupForm.style.display = 'block';
+        
+        // Update form based on method
+        const dueDateInput = document.getElementById('dueDate');
+        if (dueDateInput) {
+            if (method === 'dueDate') {
+                dueDateInput.placeholder = 'Select your due date';
+            } else if (method === 'conception') {
+                dueDateInput.placeholder = 'Select conception date (will calculate due date)';
+            } else if (method === 'lmp') {
+                dueDateInput.placeholder = 'Select last menstrual period date';
+            }
+        }
+    }
+}
+
+// Calculate pregnancy info
+function calculatePregnancyInfo() {
+    const dueDateInput = document.getElementById('dueDate');
+    if (!dueDateInput || !dueDateInput.value) return;
+    
+    const dueDate = new Date(dueDateInput.value);
+    const today = new Date();
+    
+    // Calculate weeks and days
+    const timeDiff = dueDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const weeksDiff = Math.ceil(daysDiff / 7);
+    
+    // Update display
+    document.getElementById('daysRemaining').textContent = Math.max(0, daysDiff);
+    document.getElementById('weeksRemaining').textContent = Math.max(0, weeksDiff);
+    
+    // Calculate current week (40 weeks total)
+    const currentWeek = Math.max(1, 40 - weeksDiff);
+    document.getElementById('currentWeek').textContent = `Week ${currentWeek}`;
+    
+    // Calculate trimester
+    let trimester = 1;
+    if (currentWeek > 12) trimester = 2;
+    if (currentWeek > 28) trimester = 3;
+    document.getElementById('trimester').textContent = `Trimester ${trimester}`;
+    
+    // Update progress bar
+    const progress = ((40 - weeksDiff) / 40) * 100;
+    document.getElementById('pregnancyProgress').style.width = Math.max(0, Math.min(100, progress)) + '%';
+    
+    // Update baby development
+    updateBabyDevelopment(currentWeek);
+}
+
+// Update baby development info
+function updateBabyDevelopment(week) {
+    const babySizes = {
+        1: { size: 'poppy seed', measurement: '0.1 cm' },
+        4: { size: 'sesame seed', measurement: '0.2 cm' },
+        8: { size: 'raspberry', measurement: '1.6 cm' },
+        12: { size: 'lime', measurement: '6.1 cm' },
+        16: { size: 'avocado', measurement: '11.6 cm' },
+        20: { size: 'banana', measurement: '16.4 cm' },
+        24: { size: 'corn cob', measurement: '30 cm' },
+        28: { size: 'eggplant', measurement: '37.6 cm' },
+        32: { size: 'jicama', measurement: '42.4 cm' },
+        36: { size: 'romaine lettuce', measurement: '47.4 cm' },
+        40: { size: 'watermelon', measurement: '51.2 cm' }
+    };
+    
+    // Find closest week
+    let closestWeek = 1;
+    for (let w in babySizes) {
+        if (parseInt(w) <= week) {
+            closestWeek = parseInt(w);
+        }
+    }
+    
+    const babyInfo = babySizes[closestWeek];
+    document.getElementById('babySize').textContent = `Size of a ${babyInfo.size}`;
+    document.getElementById('babyMeasurement').textContent = babyInfo.measurement;
+    
+    // Update milestones
+    updateDevelopmentMilestones(week);
+}
+
+// Update development milestones
+function updateDevelopmentMilestones(week) {
+    const milestones = [
+        { week: 4, icon: 'fas fa-heart', text: 'Heart begins to beat' },
+        { week: 8, icon: 'fas fa-hand-paper', text: 'Fingers and toes form' },
+        { week: 12, icon: 'fas fa-eye', text: 'Eyes and ears develop' },
+        { week: 16, icon: 'fas fa-running', text: 'Baby starts moving' },
+        { week: 20, icon: 'fas fa-heartbeat', text: 'You can feel kicks' },
+        { week: 24, icon: 'fas fa-lungs', text: 'Lungs begin to develop' },
+        { week: 28, icon: 'fas fa-brain', text: 'Brain development accelerates' },
+        { week: 32, icon: 'fas fa-bone', text: 'Bones harden' },
+        { week: 36, icon: 'fas fa-baby', text: 'Ready for birth' }
+    ];
+    
+    const milestonesContainer = document.getElementById('developmentMilestones');
+    if (milestonesContainer) {
+        const relevantMilestones = milestones.filter(m => m.week <= week);
+        milestonesContainer.innerHTML = relevantMilestones.map(milestone => `
+            <div class="milestone-item">
+                <i class="milestone-icon ${milestone.icon}"></i>
+                <span>${milestone.text}</span>
+            </div>
+        `).join('');
+    }
+}
+
+// Calculate weight recommendations
+function calculateWeightRecommendations() {
+    const preWeight = parseFloat(document.getElementById('prePregnancyWeight').value);
+    const height = parseFloat(document.getElementById('height').value);
+    
+    if (!preWeight || !height) return;
+    
+    // Calculate BMI
+    const bmi = preWeight / Math.pow(height / 100, 2);
+    
+    let recommendedGain;
+    if (bmi < 18.5) {
+        recommendedGain = '12.5-18 kg';
+    } else if (bmi < 25) {
+        recommendedGain = '11.5-16 kg';
+    } else if (bmi < 30) {
+        recommendedGain = '7-11.5 kg';
+    } else {
+        recommendedGain = '5-9 kg';
+    }
+    
+    document.getElementById('recommendedGain').textContent = recommendedGain;
+}
+
+// Save pregnancy setup
+function savePregnancySetup() {
+    const dueDate = document.getElementById('dueDate').value;
+    const preWeight = document.getElementById('prePregnancyWeight').value;
+    const height = document.getElementById('height').value;
+    
+    if (!dueDate) {
+        alert('Please enter your due date');
+        return;
+    }
+    
+    pregnancyData = {
+        dueDate: dueDate,
+        prePregnancyWeight: parseFloat(preWeight) || 0,
+        height: parseFloat(height) || 0,
+        setupDate: new Date().toISOString()
+    };
+    
+    localStorage.setItem('pregnancyData', JSON.stringify(pregnancyData));
+    closeModal('pregnancySetupModal');
+    
+    // Update dashboard
+    updatePregnancyDashboard();
+}
+
+// Update pregnancy dashboard
+function updatePregnancyDashboard() {
+    if (!pregnancyData || !pregnancyData.dueDate) return;
+    
+    const dueDate = new Date(pregnancyData.dueDate);
+    const today = new Date();
+    
+    // Calculate time remaining
+    const timeDiff = dueDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const weeksDiff = Math.ceil(daysDiff / 7);
+    
+    // Update countdown
+    document.getElementById('daysRemaining').textContent = Math.max(0, daysDiff);
+    document.getElementById('weeksRemaining').textContent = Math.max(0, weeksDiff);
+    
+    // Update progress
+    const currentWeek = Math.max(1, 40 - weeksDiff);
+    document.getElementById('currentWeek').textContent = `Week ${currentWeek}`;
+    
+    let trimester = 1;
+    if (currentWeek > 12) trimester = 2;
+    if (currentWeek > 28) trimester = 3;
+    document.getElementById('trimester').textContent = `Trimester ${trimester}`;
+    
+    const progress = ((40 - weeksDiff) / 40) * 100;
+    document.getElementById('pregnancyProgress').style.width = Math.max(0, Math.min(100, progress)) + '%';
+    
+    // Update baby development
+    updateBabyDevelopment(currentWeek);
+    
+    // Update weight tracking
+    updateWeightTracking();
+}
+
+// Update weight tracking
+function updateWeightTracking() {
+    if (!pregnancyData) return;
+    
+    // Get current weight from localStorage or use pre-pregnancy weight
+    const currentWeight = pregnancyData.prePregnancyWeight || 0;
+    const weightGained = 0; // This would be calculated from weight entries
+    
+    document.getElementById('currentWeight').textContent = `${currentWeight} kg`;
+    document.getElementById('weightGained').textContent = `${weightGained} kg`;
+    
+    // Calculate recommended gain
+    if (pregnancyData.height) {
+        const bmi = pregnancyData.prePregnancyWeight / Math.pow(pregnancyData.height / 100, 2);
+        let recommendedGain;
+        if (bmi < 18.5) {
+            recommendedGain = '12.5-18 kg';
+        } else if (bmi < 25) {
+            recommendedGain = '11.5-16 kg';
+        } else if (bmi < 30) {
+            recommendedGain = '7-11.5 kg';
+        } else {
+            recommendedGain = '5-9 kg';
+        }
+        document.getElementById('recommendedGain').textContent = recommendedGain;
+    }
+}
+
+// Kick Counter Functions
+function startKickCounting() {
+    const modal = document.getElementById('kickCounterModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        resetKickCounter();
+    }
+}
+
+function recordKick() {
+    kickCounter.count++;
+    document.getElementById('kickCount').textContent = kickCounter.count;
+    
+    // Add to history
+    const history = document.getElementById('kickHistory');
+    if (history) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+        const historyItem = document.createElement('div');
+        historyItem.innerHTML = `<span>${timeStr}: Kick #${kickCounter.count}</span>`;
+        history.appendChild(historyItem);
+    }
+}
+
+function toggleKickTimer() {
+    if (kickCounter.isRunning) {
+        // Stop timer
+        clearInterval(kickCounter.timer);
+        kickCounter.isRunning = false;
+        document.querySelector('.timer-btn i').className = 'fas fa-play';
+        document.querySelector('.timer-btn').innerHTML = '<i class="fas fa-play"></i> Start Timer';
+    } else {
+        // Start timer
+        kickCounter.startTime = new Date();
+        kickCounter.isRunning = true;
+        document.querySelector('.timer-btn i').className = 'fas fa-pause';
+        document.querySelector('.timer-btn').innerHTML = '<i class="fas fa-pause"></i> Stop Timer';
+        
+        kickCounter.timer = setInterval(() => {
+            const now = new Date();
+            const elapsed = Math.floor((now - kickCounter.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('kickTimer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+}
+
+function resetKickCounter() {
+    kickCounter.count = 0;
+    kickCounter.isRunning = false;
+    if (kickCounter.timer) {
+        clearInterval(kickCounter.timer);
+    }
+    
+    document.getElementById('kickCount').textContent = '0';
+    document.getElementById('kickTimer').textContent = '00:00';
+    document.querySelector('.timer-btn i').className = 'fas fa-play';
+    document.querySelector('.timer-btn').innerHTML = '<i class="fas fa-play"></i> Start Timer';
+    
+    const history = document.getElementById('kickHistory');
+    if (history) {
+        history.innerHTML = '';
+    }
+}
+
+// Contraction Timer Functions
+function startContractionTimer() {
+    const modal = document.getElementById('contractionTimerModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        resetContractionTimer();
+    }
+}
+
+function toggleContraction() {
+    if (contractionTimer.isActive) {
+        // End contraction
+        const endTime = new Date();
+        const duration = Math.floor((endTime - contractionTimer.startTime) / 1000);
+        
+        // Add to contractions list
+        contractionTimer.contractions.push({
+            start: contractionTimer.startTime,
+            end: endTime,
+            duration: duration
+        });
+        
+        contractionTimer.isActive = false;
+        document.querySelector('.contraction-btn i').className = 'fas fa-play';
+        document.querySelector('.contraction-btn').innerHTML = '<i class="fas fa-play"></i> Start Contraction';
+        
+        // Update history
+        updateContractionHistory();
+    } else {
+        // Start contraction
+        contractionTimer.startTime = new Date();
+        contractionTimer.isActive = true;
+        document.querySelector('.contraction-btn i').className = 'fas fa-pause';
+        document.querySelector('.contraction-btn').innerHTML = '<i class="fas fa-pause"></i> End Contraction';
+        
+        // Start timer
+        contractionTimer.timer = setInterval(() => {
+            const now = new Date();
+            const elapsed = Math.floor((now - contractionTimer.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('contractionTimer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+}
+
+function updateContractionHistory() {
+    const history = document.getElementById('contractionList');
+    if (!history) return;
+    
+    history.innerHTML = contractionTimer.contractions.map((contraction, index) => {
+        const startTime = contraction.start.toLocaleTimeString();
+        const duration = `${Math.floor(contraction.duration / 60)}:${(contraction.duration % 60).toString().padStart(2, '0')}`;
+        return `
+            <div class="contraction-item">
+                <span>Contraction ${index + 1}</span>
+                <span>${startTime}</span>
+                <span>${duration}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function resetContractionTimer() {
+    contractionTimer.isActive = false;
+    contractionTimer.contractions = [];
+    if (contractionTimer.timer) {
+        clearInterval(contractionTimer.timer);
+    }
+    
+    document.getElementById('contractionTimer').textContent = '00:00';
+    document.getElementById('gapTimer').textContent = '00:00';
+    document.querySelector('.contraction-btn i').className = 'fas fa-play';
+    document.querySelector('.contraction-btn').innerHTML = '<i class="fas fa-play"></i> Start Contraction';
+    
+    const history = document.getElementById('contractionList');
+    if (history) {
+        history.innerHTML = '';
+    }
+}
+
+// Pregnancy Symptoms
+function showPregnancySymptoms() {
+    // This would open a pregnancy-specific symptoms modal
+    alert('Pregnancy symptoms tracking coming soon!');
+}
+
+// Doctor Visits
+function showDoctorVisits() {
+    // This would open a doctor visits scheduling modal
+    alert('Doctor visits scheduling coming soon!');
 }

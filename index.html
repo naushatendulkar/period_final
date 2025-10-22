@@ -400,9 +400,6 @@
                             <button class="btn-secondary" onclick="showLogSymptomsModal()">
                                 <i class="fas fa-heartbeat"></i> Log Symptoms
                             </button>
-                            <button class="btn-gamification" onclick="showGamificationModal()">
-                                <i class="fas fa-trophy"></i> Achievements
-                            </button>
                         </div>
                     </div>
                     <div class="calendar-container">
@@ -420,6 +417,136 @@
                         </div>
                     </div>
                     
+                </div>
+
+                <!-- Pregnancy -->
+                <div class="dashboard-card pregnancy-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-baby"></i> Pregnancy</h3>
+                        <button class="btn-secondary" onclick="showPregnancyModal()">
+                            <i class="fas fa-baby"></i> Open Dashboard
+                        </button>
+                    </div>
+                    <div class="pregnancy-content">
+                        <!-- Pregnancy Status -->
+                        <div class="pregnancy-status" id="pregnancyStatus">
+                            <div class="status-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="status-text">
+                                <h5>Not Pregnant</h5>
+                                <p>Set up your pregnancy to start tracking</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="pregnancy-stats">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="quickDaysRemaining">--</span>
+                                    <span class="stat-label">Days Left</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="quickCurrentWeek">--</span>
+                                    <span class="stat-label">Week</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-weight"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="quickWeightGain">--</span>
+                                    <span class="stat-label">Weight Gain</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="pregnancy-actions">
+                            <button class="action-btn" onclick="showPregnancySetup()">
+                                <i class="fas fa-cog"></i> Setup
+                            </button>
+                            <button class="action-btn" onclick="startKickCounting()">
+                                <i class="fas fa-running"></i> Kick Counter
+                            </button>
+                            <button class="action-btn" onclick="startContractionTimer()">
+                                <i class="fas fa-stopwatch"></i> Contractions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements -->
+                <div class="dashboard-card achievements-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-trophy"></i> Achievements</h3>
+                        <button class="btn-secondary" onclick="showGamificationModal()">
+                            <i class="fas fa-medal"></i> View All
+                        </button>
+                    </div>
+                    <div class="achievements-content">
+                        <!-- Quick Stats -->
+                        <div class="achievements-stats">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="quickLevel">1</span>
+                                    <span class="stat-label">Level</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-fire"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="quickStreak">0</span>
+                                    <span class="stat-label">Day Streak</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-medal"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="quickBadges">0</span>
+                                    <span class="stat-label">Badges</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Achievement -->
+                        <div class="recent-achievement" id="recentAchievement">
+                            <div class="achievement-icon">
+                                <i class="fas fa-baby"></i>
+                            </div>
+                            <div class="achievement-text">
+                                <h5>First Steps</h5>
+                                <p>Log your first period to unlock this achievement!</p>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="level-progress">
+                            <div class="progress-info">
+                                <span>Level Progress</span>
+                                <span id="quickProgress">0/100</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="quickProgressFill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Health Education -->
@@ -967,6 +1094,153 @@
                         <div class="leaderboard-list" id="leaderboardList">
                             <!-- Leaderboard will be loaded here -->
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pregnancy Setup Modal -->
+    <div id="pregnancySetupModal" class="modal">
+        <div class="pregnancy-setup-container">
+            <div class="pregnancy-setup-header">
+                <div class="pregnancy-setup-title">
+                    <i class="fas fa-baby"></i>
+                    <span>Pregnancy Setup</span>
+                </div>
+                <button class="pregnancy-setup-close" onclick="closeModal('pregnancySetupModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="pregnancy-setup-content">
+                <div class="setup-section">
+                    <h4>Due Date Information</h4>
+                    <div class="setup-options">
+                        <div class="option-card" onclick="selectSetupMethod('dueDate')">
+                            <i class="fas fa-calendar-alt"></i>
+                            <h5>I know my due date</h5>
+                            <p>Enter your due date directly</p>
+                        </div>
+                        <div class="option-card" onclick="selectSetupMethod('conception')">
+                            <i class="fas fa-heart"></i>
+                            <h5>I know conception date</h5>
+                            <p>Calculate from conception</p>
+                        </div>
+                        <div class="option-card" onclick="selectSetupMethod('lmp')">
+                            <i class="fas fa-calendar-check"></i>
+                            <h5>Last menstrual period</h5>
+                            <p>Calculate from LMP</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="setup-form" id="setupForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="dueDate">Due Date</label>
+                        <input type="date" id="dueDate" onchange="calculatePregnancyInfo()">
+                    </div>
+                    <div class="form-group">
+                        <label for="prePregnancyWeight">Pre-Pregnancy Weight (kg)</label>
+                        <input type="number" id="prePregnancyWeight" step="0.1" onchange="calculateWeightRecommendations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="height">Height (cm)</label>
+                        <input type="number" id="height" onchange="calculateWeightRecommendations()">
+                    </div>
+                    <button class="btn-primary" onclick="savePregnancySetup()">
+                        <i class="fas fa-save"></i> Save Setup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kick Counter Modal -->
+    <div id="kickCounterModal" class="modal">
+        <div class="kick-counter-container">
+            <div class="kick-counter-header">
+                <div class="kick-counter-title">
+                    <i class="fas fa-running"></i>
+                    <span>Kick Counter</span>
+                </div>
+                <button class="kick-counter-close" onclick="closeModal('kickCounterModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="kick-counter-content">
+                <div class="kick-counter-display">
+                    <div class="kick-count">
+                        <span class="kick-number" id="kickCount">0</span>
+                        <span class="kick-label">Kicks</span>
+                    </div>
+                    <div class="kick-timer">
+                        <span class="timer-display" id="kickTimer">00:00</span>
+                        <span class="timer-label">Time</span>
+                    </div>
+                </div>
+                
+                <div class="kick-counter-controls">
+                    <button class="kick-btn" onclick="recordKick()">
+                        <i class="fas fa-plus"></i> Record Kick
+                    </button>
+                    <button class="timer-btn" onclick="toggleKickTimer()">
+                        <i class="fas fa-play"></i> Start Timer
+                    </button>
+                    <button class="reset-btn" onclick="resetKickCounter()">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                
+                <div class="kick-counter-info">
+                    <p>Count kicks for 1 hour. You should feel at least 10 kicks.</p>
+                    <div class="kick-history" id="kickHistory">
+                        <!-- Kick history will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contraction Timer Modal -->
+    <div id="contractionTimerModal" class="modal">
+        <div class="contraction-timer-container">
+            <div class="contraction-timer-header">
+                <div class="contraction-timer-title">
+                    <i class="fas fa-stopwatch"></i>
+                    <span>Contraction Timer</span>
+                </div>
+                <button class="contraction-timer-close" onclick="closeModal('contractionTimerModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="contraction-timer-content">
+                <div class="contraction-timer-display">
+                    <div class="current-contraction">
+                        <span class="contraction-timer" id="contractionTimer">00:00</span>
+                        <span class="contraction-label">Current Contraction</span>
+                    </div>
+                    <div class="contraction-gap">
+                        <span class="gap-timer" id="gapTimer">00:00</span>
+                        <span class="gap-label">Time Between</span>
+                    </div>
+                </div>
+                
+                <div class="contraction-timer-controls">
+                    <button class="contraction-btn" onclick="toggleContraction()">
+                        <i class="fas fa-play"></i> Start Contraction
+                    </button>
+                    <button class="reset-contraction-btn" onclick="resetContractionTimer()">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                
+                <div class="contraction-history">
+                    <h4>Contraction History</h4>
+                    <div class="contraction-list" id="contractionList">
+                        <!-- Contraction history will be shown here -->
                     </div>
                 </div>
             </div>
