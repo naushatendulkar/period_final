@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeriodTracker - Your Personal Cycle Companion</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-heart"></i>
+                <span>PeriodTracker</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#about" class="nav-link">About</a>
+                <button class="login-btn" onclick="showLoginModal()">Login</button>
+                <button class="signup-btn" onclick="showSignupModal()">Sign Up</button>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Track Your <span class="gradient-text">Monthly Cycle</span><br>
+                    with Confidence
+                </h1>
+                <p class="hero-description">
+                    A beautiful, intuitive period tracking app designed for women of all ages. 
+                    Monitor your cycle, track symptoms, and gain insights into your health.
+                </p>
+                <div class="hero-buttons">
+                    <button class="cta-primary" onclick="showSignupModal()">
+                        <i class="fas fa-calendar-plus"></i>
+                        Start Tracking
+                    </button>
+                    <button class="cta-secondary" onclick="showLoginModal()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login
+                    </button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="floating-elements">
+                    <div class="floating-icon icon-1">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="floating-icon icon-2">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="floating-icon icon-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="floating-icon icon-4">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose PeriodTracker?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3>Cycle Tracking</h3>
+                    <p>Accurately track your menstrual cycle and predict your next period with our advanced algorithm.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Health Insights</h3>
+                    <p>Get personalized insights about your cycle patterns and overall reproductive health.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3>Smart Reminders</h3>
+                    <p>Never miss important dates with customizable reminders for your period and ovulation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Privacy First</h3>
+                    <p>Your data is encrypted and secure. We prioritize your privacy and confidentiality.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Welcome Back!</h2>
+                <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            </div>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember">
+                        <span class="checkmark"></span>
+                        Remember me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                <button type="submit" class="auth-btn">Login</button>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <button type="button" class="social-btn google-btn">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
+                </button>
+                <p class="auth-switch">
+                    Don't have an account? 
+                    <a href="#" onclick="switchToSignup()">Sign up here</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Join PeriodTracker</h2>
+                <span class="close" onclick="closeModal('signupModal')">&times;</span>
+            </div>
+            <form id="signupForm" class="auth-form">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" min="13" max="100" required>
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="terms" required>
+                        <span class="checkmark"></span>
+                        I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                    </label>
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <button type="button" class="social-btn google-btn">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
+                </button>
+                <p class="auth-switch">
+                    Already have an account? 
+                    <a href="#" onclick="switchToLogin()">Login here</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard (Hidden by default) -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="dashboard-nav">
+                <div class="dashboard-logo">
+                    <i class="fas fa-heart"></i>
+                    <span>PeriodTracker</span>
+                </div>
+                <div class="user-info">
+                    <span id="userName">Welcome back!</span>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="dashboard-main">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <div class="welcome-content">
+                    <h1 id="welcomeMessage">Welcome back, <span id="userDisplayName"></span>!</h1>
+                    <p class="cycle-info">Track your cycle, monitor symptoms, and get personalized insights.</p>
+                </div>
+                <div class="quick-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div class="stat-info">
+                            <span class="stat-number" id="daysSinceLastPeriod">--</span>
+                            <span class="stat-label">Days since last period</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <div class="stat-info">
+                            <span class="stat-number" id="nextPeriodDays">--</span>
+                            <span class="stat-label">Days until next period</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-chart-line"></i>
+                        <div class="stat-info">
+                            <span class="stat-number" id="cycleLength">--</span>
+                            <span class="stat-label">Average cycle length</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Cycle Calendar -->
+                <div class="dashboard-card calendar-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar"></i> Cycle Calendar</h3>
+                        <button class="btn-secondary" onclick="showAddPeriodModal()">
+                            <i class="fas fa-plus"></i> Add Period
+                        </button>
+                    </div>
+                    <div class="calendar-container">
+                        <div class="calendar-header">
+                            <button class="calendar-nav" onclick="previousMonth()">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h4 id="currentMonth"></h4>
+                            <button class="calendar-nav" onclick="nextMonth()">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- Calendar will be generated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Symptoms & Mood Tracker -->
+                <div class="dashboard-card symptoms-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-heartbeat"></i> Today's Log</h3>
+                    </div>
+                    <div class="symptoms-form">
+                        <div class="form-group">
+                            <label>Symptoms</label>
+                            <div class="symptom-tags">
+                                <button class="symptom-tag" data-symptom="cramps">Cramps</button>
+                                <button class="symptom-tag" data-symptom="bloating">Bloating</button>
+                                <button class="symptom-tag" data-symptom="headache">Headache</button>
+                                <button class="symptom-tag" data-symptom="fatigue">Fatigue</button>
+                                <button class="symptom-tag" data-symptom="mood_swings">Mood Swings</button>
+                                <button class="symptom-tag" data-symptom="acne">Acne</button>
+                                <button class="symptom-tag" data-symptom="back_pain">Back Pain</button>
+                                <button class="symptom-tag" data-symptom="breast_tenderness">Breast Tenderness</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Mood</label>
+                            <div class="mood-selector">
+                                <button class="mood-btn" data-mood="happy">😊 Happy</button>
+                                <button class="mood-btn" data-mood="sad">😢 Sad</button>
+                                <button class="mood-btn" data-mood="anxious">😰 Anxious</button>
+                                <button class="mood-btn" data-mood="irritable">😠 Irritable</button>
+                                <button class="mood-btn" data-mood="energetic">⚡ Energetic</button>
+                                <button class="mood-btn" data-mood="calm">😌 Calm</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Flow Intensity</label>
+                            <div class="flow-selector">
+                                <button class="flow-btn" data-flow="light">Light</button>
+                                <button class="flow-btn" data-flow="medium">Medium</button>
+                                <button class="flow-btn" data-flow="heavy">Heavy</button>
+                                <button class="flow-btn" data-flow="spotting">Spotting</button>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="saveDailyLog()">
+                            <i class="fas fa-save"></i> Save Today's Log
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="dashboard-card insights-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-brain"></i> AI Insights</h3>
+                    </div>
+                    <div class="insights-content">
+                        <div class="insight-item">
+                            <i class="fas fa-lightbulb"></i>
+                            <div class="insight-text">
+                                <h4>Cycle Prediction</h4>
+                                <p id="cyclePrediction">Based on your cycle history, your next period is predicted to start on <strong id="predictedDate">--</strong></p>
+                            </div>
+                        </div>
+                        <div class="insight-item">
+                            <i class="fas fa-chart-bar"></i>
+                            <div class="insight-text">
+                                <h4>Pattern Analysis</h4>
+                                <p id="patternAnalysis">Your cycle shows <strong id="cyclePattern">--</strong> pattern with an average length of <strong id="avgCycleLength">--</strong> days.</p>
+                            </div>
+                        </div>
+                        <div class="insight-item">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div class="insight-text">
+                                <h4>Health Tips</h4>
+                                <p id="healthTips">Stay hydrated and consider light exercise during your period to help with cramps.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cycle History -->
+                <div class="dashboard-card history-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-history"></i> Cycle History</h3>
+                    </div>
+                    <div class="history-content">
+                        <div class="history-chart">
+                            <canvas id="cycleChart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="history-stats">
+                            <div class="history-stat">
+                                <span class="stat-label">Shortest Cycle</span>
+                                <span class="stat-value" id="shortestCycle">-- days</span>
+                            </div>
+                            <div class="history-stat">
+                                <span class="stat-label">Longest Cycle</span>
+                                <span class="stat-value" id="longestCycle">-- days</span>
+                            </div>
+                            <div class="history-stat">
+                                <span class="stat-label">Regularity</span>
+                                <span class="stat-value" id="regularity">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Period Modal -->
+    <div id="addPeriodModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Period</h2>
+                <span class="close" onclick="closeModal('addPeriodModal')">&times;</span>
+            </div>
+            <form id="addPeriodForm" class="auth-form">
+                <div class="form-group">
+                    <label for="periodStartDate">Start Date</label>
+                    <input type="date" id="periodStartDate" name="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="periodEndDate">End Date</label>
+                    <input type="date" id="periodEndDate" name="endDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="periodFlow">Flow Intensity</label>
+                    <select id="periodFlow" name="flow" required>
+                        <option value="light">Light</option>
+                        <option value="medium">Medium</option>
+                        <option value="heavy">Heavy</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="periodNotes">Notes (Optional)</label>
+                    <textarea id="periodNotes" name="notes" rows="3" placeholder="Any additional notes about this period..."></textarea>
+                </div>
+                <button type="submit" class="auth-btn">Add Period</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="success-message">
+        <i class="fas fa-check-circle"></i>
+        <span id="successText"></span>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errorText"></span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
